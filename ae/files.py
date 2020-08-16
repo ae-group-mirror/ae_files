@@ -1,9 +1,18 @@
-""" This namespace portion is providing helpers for to handle files.
+"""
+file collection, grouping and cacheing
+======================================
 
-With the help of the classes :class:`RegisteredFile`, :class:`CachedFile` and
-:class:`FilesRegister` your app could for example collect all available
-image resource files for an easy selection of the best matching image
-for the current screen resolutions.
+This namespace portion is pure Python, only depending on the
+:mod:`ae.paths` namespace portion and is providing helpers for
+file managing.
+
+The classes :class:`FilesRegister`, :class:`RegisteredFile` and
+:class:`CachedFile` collect, group and cache
+available files for to later find the best fitting match for
+a requested purpose.
+
+Usable for dynamic selection of image/font/audio/... files depending
+on the current user preferences, hardware and/or software environment.
 
 
 registered file
@@ -18,7 +27,7 @@ can be instantiated from one of the classes :class:`RegisteredFile` or
     rf = RegisteredFile('path/to/the/file_name.extension')
 
     assert rf,path == 'path/to/the/file_name.extension'
-    assert rf.name == 'file_name'
+    assert rf.stem == 'file_name'
     assert rf.ext == '.extension'
     assert rf.properties == dict()
 
@@ -58,7 +67,7 @@ of the file opened::
                     object_loader=lambda cached_file: open(cached_file.path))
 
     assert cf,path == 'integer_69/float_3,69/string_whatever/file_name.ext'
-    assert cf.name == 'file_name'
+    assert cf.stem == 'file_name'
     assert cf.ext == '.ext'
     assert cf.properties['integer'] == 69
     assert cf.properties['float'] == 3.69
@@ -94,25 +103,26 @@ a object of type :class:`RegisteredFile`.
 Several files with the same base name can be collected and registered e,g,
 with different formats, for to be selected by the app by their different
 properties. Assuming your application is providing an icon image in two
-sizes, provided within the following directory structure:
+sizes, provided within the following directory structure::
 
-    resources
-        size_72
+    resources/
+        size_72/
             app_icon.jpg
-        size_150
+        size_150/
             app_icon.png
 
 First create an instance of :class:`FilesRegister` for to collect both
-image files::
+image files from the `resources` folder::
 
     fr = FilesRegister('resources')
 
-After the files collection the resulting `fr` behaves like a dict object,
-where the key is the file name (app_icon) without extension and
-the value is a list of instances of :class:`RegisteredFile`. So
-both files in the resources folder are provided as one dict item::
+The resulting object `fr` behaves like a dict object,
+where the item key is the file name without extension (app_icon) and
+the item value is a list of instances of :class:`RegisteredFile`.
+Both files in the resources folder are provided as one dict item::
 
     assert 'app_icon` in fr
+    assert len(fr) == 1
     assert len(fr['app_icon']) == 2
     assert isinstance(fr['app_icon`][0], RegisteredFile)
 
@@ -121,17 +131,22 @@ For to select the appropriate image file you can use the
 
     app_icon_image_path = fr.find_file('app_icon', dict(size=current_size))
 
-For more complex selections you can use callables which have to be passed
+As a shortcut you can alternatively call the object directly (leaving .find_file away)::
+
+    app_icon_image_path = fr('app_icon', dict(size=current_size))
+
+For more complex selections you can use callables passed
 into the :paramref:`~FilesRegister.find_file.property_matcher` amd
 :paramref:`~FilesRegister.find_file.file_sorter` arguments
 of :meth:`~FilesRegister.find_file`.
 """
-import glob
 import os
 from typing import Any, Callable, Dict, Optional, Type, Union
 
+from ae.paths import path_files                 # type: ignore
 
-__version__ = '0.0.1'
+
+__version__ = '0.0.2'
 
 
 PropertyType = Union[int, float, str]           #: types of property values
@@ -148,10 +163,10 @@ class RegisteredFile:
         """
         assert not kwargs, "RegisteredFile does not have any kwargs - maybe want to use CachedFile as file_class."
         self.path: str = path                                           #: file path
-        self.name: str                                                  #: file basename without extension
+        self.stem: str                                                  #: file basename without extension
         self.ext: str                                                   #: file name extension
         dir_name, base_name = os.path.split(path)
-        self.name, self.ext = os.path.splitext(base_name)
+        self.stem, self.ext = os.path.splitext(base_name)
 
         self.properties: PropertiesType = dict()                        #: file properties
         # dir_name: str  # PyCharm needs the str type annotation
@@ -180,7 +195,7 @@ class RegisteredFile:
     def add_property(self, property_name: str, str_value: str):
         """ add a property to this file instance.
 
-        :param property_name:   name of the property to add.
+        :param property_name:   stem of the property to add.
         :param str_value:       literal of the property value (int/float/str type will be detected).
         """
         try:
@@ -253,31 +268,38 @@ class FilesRegister(dict):
         """ args and kwargs will be completely redirected to :meth:`~FilesRegister.find_file`. """
         return self.find_file(*args, **kwargs)
 
-    def add_path(self, path: str, recursive: bool = True, file_class: Type[RegisteredFile] = RegisteredFile,
-                 **file_class_kwargs) -> 'FilesRegister':
-        """ add file in folder specified by :paramref:`~add_path.path`.
+    def add_file(self, file: Union[Any], name: str = ""):
+        """ add a single file to the list of this dict mapped by the file-name/stem as dict key.
 
-        :param path:                path to root folder for to collect file from (by default including
-                                    from the sub-folders of the root folder).
+        :param file:                either file path string or any object with a `stem` attribute.
+        :param name:
+        """
+        if not name:
+            name = os.path.splitext(os.path.split(file)[1])[0] if isinstance(file, str) else file.stem
+
+        if name in self:
+            self[name].append(file)
+        else:
+            self[name] = [file]
+
+    def add_path(self, path_file_mask: str, recursive: bool = True,
+                 file_class: Type[Any] = RegisteredFile, **file_class_kwargs) -> 'FilesRegister':
+        """ add files found in folder specified by :paramref:`~add_path.path`.
+
+        :param path_file_mask:      glob file path mask (with optional wildcards) specifying the files to
+                                    collect (by default including the sub-folders).
         :param recursive:           pass False to only collect the given folder (ignoring sub-folders).
-        :param file_class:          pass :class:`CachedFile` for to cache the files that will be collected.
+        :param file_class:          pass str or any class with a `stem` attribute storing the file name w/o extension,
+                                    like e.g. :class:`CachedFile`, :class:`RegisteredFile` or `pathlib.PurePath`.
+                                    Each found file will passed to the class constructor and added to the
+                                    list which is a item of this dict.
         :param file_class_kwargs:   additional/optional kwargs passed onto the used file_class. Pass e.g.
-                                    the object_loader to use if :paramref:`~add_path.file_class` is
-                                    :class:`CachedFile` (do not use with RegisteredFile).
+                                    the object_loader to use, if :paramref:`~add_path.file_class` is
+                                    :class:`CachedFile` (instead of the default: :class:`RegisteredFile`).
         :return:
         """
-        if recursive and not path.endswith('**'):
-            path = os.path.join(path, '**')
-        files = list()
-        for part in glob.glob(path, recursive=recursive):
-            if os.path.isfile(part):
-                files.append(file_class(part, **file_class_kwargs))
-        for file in files:
-            name = file.name
-            if name in self:
-                self[name].append(file)
-            else:
-                self[name] = [file]
+        for file in path_files(path_file_mask, recursive=recursive, file_class=file_class, **file_class_kwargs):
+            self.add_file(file, name=file.stem)
         return self
 
     def find_file(self, name: str, properties: Optional[PropertiesType] = None,

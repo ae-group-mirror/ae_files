@@ -65,7 +65,7 @@ class TestRegisteredFile:
 
         rf = RegisteredFile(wop)
         assert rf.path == file_without_properties
-        assert rf.name == file_name
+        assert rf.stem == file_name
         assert rf.ext == file_ext
         assert rf.properties == dict()
 
@@ -78,7 +78,7 @@ class TestRegisteredFile:
         assert rf.path.endswith(file_name + file_ext)
         assert all(sep + _ + '_' in rf.path for _ in file_properties.keys())
         assert all('_' + str(_) + sep in rf.path for _ in file_properties.values())
-        assert rf.name == file_name
+        assert rf.stem == file_name
         assert rf.ext == file_ext
         assert rf.properties == file_properties
 
@@ -101,7 +101,7 @@ class TestCachedFile:
 
         cf = CachedFile(wop, FileLoaderMockClass.load)
         assert cf.path == file_without_properties
-        assert cf.name == file_name
+        assert cf.stem == file_name
         assert cf.ext == file_ext
         assert cf.properties == dict()
         assert cf.late_loading
@@ -120,7 +120,7 @@ class TestCachedFile:
         assert cf.path.endswith(file_name + file_ext)
         assert all(sep + _ + '_' in cf.path for _ in file_properties.keys())
         assert all('_' + str(_) + sep in cf.path for _ in file_properties.values())
-        assert cf.name == file_name
+        assert cf.stem == file_name
         assert cf.ext == file_ext
         assert cf.properties == file_properties
         assert cf.loaded_object is cf   # mock is returning passed cf instance
@@ -141,9 +141,9 @@ class TestCachedFile:
         cf.loaded_object.close()
 
     def test_file_io_open_read(self):
-        def load_file_content(cf):
+        def load_file_content(lcf):
             """ read file content """
-            with open(cf.path) as fp:
+            with open(lcf.path) as fp:
                 content = fp.read()
             return content
 
@@ -151,10 +151,10 @@ class TestCachedFile:
         assert isinstance(cf.loaded_object, str)
         assert cf.loaded_object == load_file_content(cf)
 
-    def test_file_io_open_readlines(self):
-        def load_file_content(cf):
+    def test_file_io_open_read_lines(self):
+        def load_file_content(lcf):
             """ read file content """
-            with open(cf.path) as fp:
+            with open(lcf.path) as fp:
                 content = fp.readlines()
             return content
 
@@ -188,7 +188,7 @@ class TestFilesRegister:
         files = fr[file_name]
         assert len(files) == 2
         assert all(_.path in (wop, wip) for _ in files)
-        assert all(_.name == file_name for _ in files)
+        assert all(_.stem == file_name for _ in files)
         assert all(_.ext == file_ext for _ in files)
         assert all(_.properties in (dict(), file_properties) for _ in files)
 
@@ -201,40 +201,46 @@ class TestFilesRegister:
         files = fr[file_name]
         assert len(files) == 2
         assert all(_.path in (wop, wip) for _ in files)
-        assert all(_.name == file_name for _ in files)
+        assert all(_.stem == file_name for _ in files)
         assert all(_.ext == file_ext for _ in files)
         assert all(_.properties in (dict(), file_properties) for _ in files)
 
+        old_len = len(fr)
+        assert 'test_files' not in fr
+        fr.add_file('tests/test_files.py')
+        assert old_len < len(fr)
+        assert 'test_files' in fr
+
     def test_find_file_by_name(self, files_to_test):
         fr = FilesRegister(file_root)
-        assert fr.find_file(file_name).name == file_name
+        assert fr.find_file(file_name).stem == file_name
 
     def test_find_file_by_properties(self, files_to_test):
         fr = FilesRegister(file_root)
         ff = fr.find_file(file_name, properties=file_properties)
         assert ff
-        assert ff.name == file_name
+        assert ff.stem == file_name
         assert ff.properties == file_properties
 
     def test_find_file_by_property_matcher(self, files_to_test):
         fr = FilesRegister(file_root)
         ff = fr.find_file(file_name, property_matcher=property_matcher_mock)
         assert ff
-        assert ff.name == file_name
+        assert ff.stem == file_name
         assert ff.properties == file_properties
 
     def test_find_file_by_property_matcher_and_file_sorter(self, files_to_test):
         fr = FilesRegister(file_root)
         ff = fr.find_file(file_name, properties=file_properties, file_sorter=file_sorter_mock)
         assert ff
-        assert ff.name == file_name
+        assert ff.stem == file_name
         assert ff.properties == file_properties
 
     def test_find_file_by_file_sorter(self, files_to_test):
         fr = FilesRegister(file_root)
         ff = fr.find_file(file_name, file_sorter=file_sorter_mock)
         assert ff
-        assert ff.name == file_name
+        assert ff.stem == file_name
         assert ff.properties == dict()      # finds the one without properties because int-default==0
 
     def test_find_file_with_default_property_matcher(self):
@@ -257,7 +263,7 @@ class TestFilesRegister:
         files = fr[file_name]
         assert len(files) == 2
         assert all(_.path in (wop, wip) for _ in files)
-        assert all(_.name == file_name for _ in files)
+        assert all(_.stem == file_name for _ in files)
         assert all(_.ext == file_ext for _ in files)
         assert all(_.properties in (dict(), file_properties) for _ in files)
 
