@@ -182,7 +182,7 @@ class TestFilesRegister:
 
     def test_init_add_path(self, files_to_test):
         wop, wip = files_to_test
-        fr = FilesRegister(file_root)
+        fr = FilesRegister(os.path.join(file_root, '**'))
         assert len(fr) == 1
         assert file_name in fr
         files = fr[file_name]
@@ -194,8 +194,8 @@ class TestFilesRegister:
 
     def test_init_add_path_redirect(self, files_to_test):
         wop, wip = files_to_test
-        fri = FilesRegister(file_root)
-        fr = FilesRegister().add_path(file_root)
+        fri = FilesRegister(os.path.join(file_root, '**'))
+        fr = FilesRegister().add_path(os.path.join(file_root, '**'))
         assert len(fri) == len(fr)
         assert file_name in fr
         files = fr[file_name]
@@ -212,32 +212,32 @@ class TestFilesRegister:
         assert 'test_files' in fr
 
     def test_find_file_by_name(self, files_to_test):
-        fr = FilesRegister(file_root)
+        fr = FilesRegister(os.path.join(file_root, '**'))
         assert fr.find_file(file_name).stem == file_name
 
     def test_find_file_by_properties(self, files_to_test):
-        fr = FilesRegister(file_root)
+        fr = FilesRegister(os.path.join(file_root, '**'))
         ff = fr.find_file(file_name, properties=file_properties)
         assert ff
         assert ff.stem == file_name
         assert ff.properties == file_properties
 
     def test_find_file_by_property_matcher(self, files_to_test):
-        fr = FilesRegister(file_root)
+        fr = FilesRegister(os.path.join(file_root, '**'))
         ff = fr.find_file(file_name, property_matcher=property_matcher_mock)
         assert ff
         assert ff.stem == file_name
         assert ff.properties == file_properties
 
     def test_find_file_by_property_matcher_and_file_sorter(self, files_to_test):
-        fr = FilesRegister(file_root)
+        fr = FilesRegister(os.path.join(file_root, '**'))
         ff = fr.find_file(file_name, properties=file_properties, file_sorter=file_sorter_mock)
         assert ff
         assert ff.stem == file_name
         assert ff.properties == file_properties
 
     def test_find_file_by_file_sorter(self, files_to_test):
-        fr = FilesRegister(file_root)
+        fr = FilesRegister(os.path.join(file_root, '**'))
         ff = fr.find_file(file_name, file_sorter=file_sorter_mock)
         assert ff
         assert ff.stem == file_name
@@ -257,7 +257,7 @@ class TestFilesRegister:
 
     def test_cache_file_class(self, files_to_test):
         wop, wip = files_to_test
-        fr = FilesRegister(file_root, file_class=CachedFile, object_loader=file_loader_mock_func)
+        fr = FilesRegister(os.path.join(file_root, '**'), file_class=CachedFile, object_loader=file_loader_mock_func)
         assert len(fr) == 1
         assert file_name in fr
         files = fr[file_name]

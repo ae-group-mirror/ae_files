@@ -1,6 +1,6 @@
 """
-file collection, grouping and cacheing
-======================================
+file collection, grouping and caching
+=====================================
 
 This namespace portion is pure Python, only depending on the
 :mod:`ae.paths` namespace portion and is providing helpers for
@@ -146,7 +146,7 @@ from typing import Any, Callable, Dict, Optional, Type, Union
 from ae.paths import path_files                 # type: ignore
 
 
-__version__ = '0.0.2'
+__version__ = '0.0.3'
 
 
 PropertyType = Union[int, float, str]           #: types of property values
@@ -268,28 +268,26 @@ class FilesRegister(dict):
         """ args and kwargs will be completely redirected to :meth:`~FilesRegister.find_file`. """
         return self.find_file(*args, **kwargs)
 
-    def add_file(self, file: Union[Any], name: str = ""):
+    def add_file(self, file: Union[Any]):
         """ add a single file to the list of this dict mapped by the file-name/stem as dict key.
 
         :param file:                either file path string or any object with a `stem` attribute.
-        :param name:
         """
-        if not name:
-            name = os.path.splitext(os.path.split(file)[1])[0] if isinstance(file, str) else file.stem
-
+        name = os.path.splitext(os.path.basename(file))[0] if isinstance(file, str) else file.stem
         if name in self:
             self[name].append(file)
         else:
             self[name] = [file]
 
-    def add_path(self, path_file_mask: str, recursive: bool = True,
+    def add_path(self, file_path_mask: str, recursive: bool = True,
                  file_class: Type[Any] = RegisteredFile, **file_class_kwargs) -> 'FilesRegister':
         """ add files found in folder specified by :paramref:`~add_path.path`.
 
-        :param path_file_mask:      glob file path mask (with optional wildcards) specifying the files to
+        :param file_path_mask:      glob file path mask (with optional wildcards) specifying the files to
                                     collect (by default including the sub-folders).
         :param recursive:           pass False to only collect the given folder (ignoring sub-folders).
-        :param file_class:          pass str or any class with a `stem` attribute storing the file name w/o extension,
+        :param file_class:          pass str or any class or callable where the returned instance/value is either
+                                    a string or an object with a `stem` attribute (holding the file name w/o extension),
                                     like e.g. :class:`CachedFile`, :class:`RegisteredFile` or `pathlib.PurePath`.
                                     Each found file will passed to the class constructor and added to the
                                     list which is a item of this dict.
@@ -298,8 +296,8 @@ class FilesRegister(dict):
                                     :class:`CachedFile` (instead of the default: :class:`RegisteredFile`).
         :return:
         """
-        for file in path_files(path_file_mask, recursive=recursive, file_class=file_class, **file_class_kwargs):
-            self.add_file(file, name=file.stem)
+        for file in path_files(file_path_mask, recursive=recursive, file_class=file_class, **file_class_kwargs):
+            self.add_file(file)
         return self
 
     def find_file(self, name: str, properties: Optional[PropertiesType] = None,
