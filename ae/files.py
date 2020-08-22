@@ -16,7 +16,7 @@ on the current user preferences, hardware and/or software environment.
 
 
 registered file
-===============
+---------------
 
 A registered file object represents a single file on your file system and
 can be instantiated from one of the classes :class:`RegisteredFile` or
@@ -26,7 +26,7 @@ can be instantiated from one of the classes :class:`RegisteredFile` or
 
     rf = RegisteredFile('path/to/the/file_name.extension')
 
-    assert rf,path == 'path/to/the/file_name.extension'
+    assert rf.path == 'path/to/the/file_name.extension'
     assert rf.stem == 'file_name'
     assert rf.ext == '.extension'
     assert rf.properties == dict()
@@ -37,36 +37,38 @@ does not contain folder names with an underscore character.
 
 
 file properties
----------------
+^^^^^^^^^^^^^^^
 
-File properties are provided in dict object, where each item reflects a property,
-where the key is the name of the property.
+File properties are provided in the :attr:`~RegisteredFile.properties` attribute
+which is a dict instance, where the key is the name of the property.
+Each item of this attribute reflects a property of the registered file.
 
 Property names and values are automatically determined
 via the names of their specified sub-folders. Every sub-folder name containing an
 underscore character in the format <name>_<value> will be interpreted
 as a file property::
 
-    rf = RegisteredFile('integer_69/float_3,69/string_whatever/file_name.ext')
-    assert rf.properties['integer'] == 69
-    assert rf.properties['float'] == 3.69
-    assert rf.properties['string'] == 'whatever'
+    rf = RegisteredFile('name1_69/name2_3.69/name3_whatever/file_name.ext')
+    assert rf.properties['name1'] == 69
+    assert rf.properties['name2'] == 3.69
+    assert rf.properties['name3'] == 'whatever'
 
-Currently the types int, float and string are supported for property values.
+Currently the property types `int`, `float` and `string` are recognized
+and converted into a property value.
 
 
 cached file
-===========
+-----------
 
-A cached file created from the :class:`CachedFile' behaves like
+A cached file created from the :class:`CachedFile` behaves like a
 :ref:`registered file` and additionally provides the possibility to cache
-parts or thw whole content of the file as well as the file pointer
-of the file opened::
+parts or the whole file content as well as the file pointer
+of the opened file::
 
-    cf = CachedFile('integer_69/float_3,69/string_whatever/file_name.ext',
+    cf = CachedFile('integer_69/float_3.69/string_whatever/file_name.ext',
                     object_loader=lambda cached_file: open(cached_file.path))
 
-    assert cf,path == 'integer_69/float_3,69/string_whatever/file_name.ext'
+    assert cf.path == 'integer_69/float_3.69/string_whatever/file_name.ext'
     assert cf.stem == 'file_name'
     assert cf.ext == '.ext'
     assert cf.properties['integer'] == 69
@@ -81,7 +83,7 @@ of the file opened::
 
 
 files register
-==============
+--------------
 
 A files register does the collection and selection of files for your application,
 for example for to find and select resource files like icon/image or sound files.
@@ -100,7 +102,7 @@ If a file with the base name `file_name` exists in a sub-folder of the two
 provided paths then the :meth:`~FilesRegister.find_file` method will return
 a object of type :class:`RegisteredFile`.
 
-Several files with the same base name can be collected and registered e,g,
+Several files with the same base name can be collected and registered e.g.
 with different formats, for to be selected by the app by their different
 properties. Assuming your application is providing an icon image in two
 sizes, provided within the following directory structure::
@@ -121,17 +123,18 @@ where the item key is the file name without extension (app_icon) and
 the item value is a list of instances of :class:`RegisteredFile`.
 Both files in the resources folder are provided as one dict item::
 
-    assert 'app_icon` in fr
+    assert 'app_icon' in fr
     assert len(fr) == 1
     assert len(fr['app_icon']) == 2
-    assert isinstance(fr['app_icon`][0], RegisteredFile)
+    assert isinstance(fr['app_icon'][0], RegisteredFile)
 
 For to select the appropriate image file you can use the
 :meth:`~FilesRegister.find_file` method::
 
     app_icon_image_path = fr.find_file('app_icon', dict(size=current_size))
 
-As a shortcut you can alternatively call the object directly (leaving .find_file away)::
+As a shortcut you can alternatively call the object directly
+(leaving `.find_file` away)::
 
     app_icon_image_path = fr('app_icon', dict(size=current_size))
 
@@ -139,6 +142,7 @@ For more complex selections you can use callables passed
 into the :paramref:`~FilesRegister.find_file.property_matcher` amd
 :paramref:`~FilesRegister.find_file.file_sorter` arguments
 of :meth:`~FilesRegister.find_file`.
+
 """
 import os
 from typing import Any, Callable, Dict, Optional, Type, Union
@@ -146,7 +150,7 @@ from typing import Any, Callable, Dict, Optional, Type, Union
 from ae.paths import path_files                 # type: ignore
 
 
-__version__ = '0.0.3'
+__version__ = '0.0.4'
 
 
 PropertyType = Union[int, float, str]           #: types of property values
@@ -209,6 +213,11 @@ class RegisteredFile:
 
 
 def _default_object_loader(file):
+    """ file object loader that is opening the file and keeping the handle of the opened file.
+
+    :param file:                file object with a `path` attribute (holding the complete file path).
+    :return:                    file handle to the opened file.
+    """
     return open(file.path)
 
 
@@ -247,7 +256,8 @@ class FilesRegister(dict):
                  **add_path_kwargs):
         """ create files register instance.
 
-        This method gets redirected with *args and **add_path_kwargs to :meth:`~FilesRegister.add_path`.
+        This method gets redirected with :paramref:`~FilesRegister.args` and
+        :paramref:`~FilesRegister.add_path_kwargs` arguments to :meth:`~FilesRegister.add_path`.
 
         :param args:                if passed then :meth:`~FilesRegister.add_path` will be called with
                                     this args tuple.
