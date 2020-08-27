@@ -65,8 +65,8 @@ More info on the features and usage of this portion are available at
 [ReadTheDocs](https://ae.readthedocs.io/en/latest/_autosummary/ae.files.html#module-ae.files
 "ae_files documentation").
 
-<!-- Common files version 0.0.45 deployed  version 0.0.1 (with 0.0.45)
+<!-- Common files version 0.0.60 deployed version 0.1.4 (with 0.0.60)
      to https://gitlab.com/ae-group as ae_files module as well as
      to https://ae-group.gitlab.io with CI check results as well as
-     to https://pypi.org/project as ae-files package.
+     to https://pypi.org/project/ae-files as namespace portion ae-files.
 -->

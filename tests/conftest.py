@@ -39,7 +39,14 @@ def restore_app_env(sys_argv_app_key_restore):
     with app_inst_lock:
         app_keys = list(reversed(list(_app_instances.keys())))
         for key in app_keys:
-            _unregister_app_instance(key)   # remove app from ae.core app register/dict
+            # copied from ae.enaml_app conftest.py (not needed for apps based on ae.kivy_app)
+            app_instance = _app_instances[key]
+            app_win = getattr(app_instance, 'framework_win', False)
+            if app_win and hasattr(app_win, 'close') and callable(app_win.close):
+                app_win.close()
+
+            # remove app from ae.core app register/dict
+            _unregister_app_instance(key)
 
 
 @pytest.fixture

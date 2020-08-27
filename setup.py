@@ -21,17 +21,24 @@ if __name__ == "__main__":
     package_name = nev['package_name']
 
     setup_kwargs = dict(
-        name=package_name,              # pip install name (not the import package name)
+        name=package_name,              # or pip install name (nev['pip_name']) or import name (nev['import_name'])
         version=nev['package_version'],
         author="Andi Ecker",
         author_email="aecker2@gmail.com",
         description=package_name + " portion of python application environment namespace package",
+        license=nev['portion_license'],
         long_description=file_content("README.md"),
         long_description_content_type="text/markdown",
         url=f"{nev['repo_root']}/{package_name}",
-        # don't needed for native/implicit namespace packages: namespace_packages=[namespace_name],
-        # packages=setuptools.find_packages(),
-        packages=setuptools.find_namespace_packages(include=[namespace_name]),  # find namespace portions
+        # kwargs that are don't needed for native/implicit namespace packages:
+        # - namespace_packages=[namespace_name],
+        # - packages=setuptools.find_packages(),
+        # find namespace portion packages resulting in:
+        # - ['ae'] for a (single) portion module.
+        #   * using instead hardcoded packages=[] results in incomplete package
+        #   * using ['ae.literal'] `setup sdist bdist_wheel` fails with "package directory 'ae/literal' does not exist"
+        # - ['ae.<sub-package1-name>', ...] for sub-package(s)
+        packages=setuptools.find_namespace_packages(include=nev['find_packages_include']),
         python_requires=">=3.6",
         install_requires=nev['install_require'],
         setup_requires=nev['setup_require'],
@@ -47,7 +54,7 @@ if __name__ == "__main__":
             "Programming Language :: Python",
             "Programming Language :: Python :: 3",
             "Programming Language :: Python :: 3.6",
-            "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+            "License :: " + nev['portion_license'],
             "Operating System :: OS Independent",
             "Topic :: Software Development :: Libraries :: Application Frameworks",
         ],

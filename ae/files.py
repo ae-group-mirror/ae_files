@@ -150,7 +150,7 @@ from typing import Any, Callable, Dict, Optional, Type, Union
 from ae.paths import path_files                 # type: ignore
 
 
-__version__ = '0.0.4'
+__version__ = '0.1.4'
 
 
 PropertyType = Union[int, float, str]           #: types of property values
