@@ -144,17 +144,48 @@ into the :paramref:`~FilesRegister.find_file.property_matcher` amd
 of :meth:`~FilesRegister.find_file`.
 
 """
+import glob
 import os
 from typing import Any, Callable, Dict, Optional, Type, Union
 
 from ae.paths import path_files                 # type: ignore
 
 
-__version__ = '0.1.4'
+__version__ = '0.1.5'
 
 
 PropertyType = Union[int, float, str]           #: types of property values
 PropertiesType = Dict[str, PropertyType]        #: dict of file properties
+
+
+def series_file_name(file_path: str, digits: int = 2, marker: str = " ", create: bool = False) -> str:
+    """ determine non-existent series file name with an unique series index.
+
+    :param file_path:           file path and name (optional with extension).
+    :param digits:              number of digits used for the series index.
+    :param marker:              marker that will be put at the end of the file name and before the series index.
+    :param create:              pass True to create the file (for to reserve the series index).
+    :return:                    file path extended with unique/new series index.
+    """
+    path_stem, ext = os.path.splitext(file_path)
+    path_stem += marker
+
+    # following alternative implementation fails if files exits with non-numeric indexes
+    # found_files = sorted(glob.glob(path_stem + "*" + ext), reverse=True)
+    # stem_len = len(path_stem)
+    # index = int(found_files[0][stem_len:stem_len + digits]) + 1 if found_files else 1
+    found_files = glob.glob(path_stem + "*" + ext)
+    index = len(found_files) + 1
+    while True:
+        file_path = path_stem + format(index, "0" + str(digits)) + ext
+        if not os.path.exists(file_path):
+            break
+        index += 1
+
+    if create:
+        open(file_path, 'w').close()
+
+    return file_path
 
 
 class RegisteredFile:

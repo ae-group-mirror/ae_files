@@ -1,11 +1,40 @@
 """ test module for the ae.files namespace portion. """
+import glob
 import os
 from io import TextIOWrapper
 
 import pytest
 import shutil
 
-from ae.files import RegisteredFile, CachedFile, FilesRegister
+from ae.files import RegisteredFile, CachedFile, FilesRegister, series_file_name
+
+
+class TestHelpers:
+    def test_series_file_name_basics(self):
+        assert series_file_name("tests/series_tests.tst") == "tests/series_tests 01.tst"
+        assert series_file_name("tests/series_tests.tst", marker='_copy_') == "tests/series_tests_copy_01.tst"
+        assert series_file_name("tests/series_tests.tst", digits=1) == "tests/series_tests 1.tst"
+
+    def test_series_file_name_create(self):
+        file_mask = "tests/series_tests*.tst"
+        try:
+            assert series_file_name("tests/series_tests.tst", create=True) == "tests/series_tests 01.tst"
+            assert series_file_name("tests/series_tests.tst", create=True) == "tests/series_tests 02.tst"
+        finally:
+            for file in glob.glob(file_mask):
+                os.remove(file)
+
+    def test_series_file_name_conflict(self):
+        file_mask = "tests/series_tests*.tst"
+        try:
+            open(file_mask.replace('*', ' aaa'), 'w').close()
+            open(file_mask.replace('*', ' 04'), 'w').close()
+            assert series_file_name("tests/series_tests.tst", create=True) == "tests/series_tests 03.tst"
+            assert series_file_name("tests/series_tests.tst") == "tests/series_tests 05.tst"
+        finally:
+            for file in glob.glob(file_mask):
+                os.remove(file)
+
 
 file_root = 'TstRootFolder'
 file_name = 'tst_file'
