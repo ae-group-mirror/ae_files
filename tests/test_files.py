@@ -297,3 +297,32 @@ class TestFilesRegister:
         assert all(_.properties in (dict(), file_properties) for _ in files)
 
         assert all(isinstance(_, CachedFile) for _ in files)
+
+    def test_add_files_register(self):
+        fr = FilesRegister()
+        fr.add_file("test.xx")
+        fr.add_file("test.yy")
+        fr.add_file("test3")
+
+        fr2 = FilesRegister()
+        fr2.add_file("dir/test.zz")
+        fr2.add_file("dir3/test6")
+
+        fr.add_files_register(fr2)
+        assert len(fr) == 3
+        assert len(fr['test']) == 3
+        assert fr.find_file('test')
+        assert fr.find_file('test3')
+        assert fr.find_file('test6')
+
+    def test_reclassify(self):
+        fr = FilesRegister()
+        fr.add_file('ttt')
+        fr.add_file('dir/ttt')
+        assert len(fr['ttt']) == 2
+
+        assert all(isinstance(file, str) for file in fr['ttt'])
+        fr.reclassify()
+        assert all(isinstance(file, CachedFile) for file in fr['ttt'])
+        fr.reclassify(file_class=RegisteredFile)
+        assert all(isinstance(file, RegisteredFile) for file in fr['ttt'])
