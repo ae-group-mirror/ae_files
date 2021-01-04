@@ -146,7 +146,7 @@ __version__ = '0.1.7'
 FileObject = Union[str, 'RegisteredFile', 'CachedFile', pathlib.Path, pathlib.PurePath, Any]
 """ file object type, e.g. a file path str or any class or callable where the returned instance/value is either a string
     or an object with a `stem` attribute (holding the file name w/o extension), like e.g. :class:`CachedFile`,
-    :class:`RegisteredFile`, :class:`pathlib.Path` or :class:`pathlib.PurePath`. 
+    :class:`RegisteredFile`, :class:`pathlib.Path` or :class:`pathlib.PurePath`.
 """
 
 PropertyType = Union[int, float, str]                                           #: types of property values
