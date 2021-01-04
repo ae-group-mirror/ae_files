@@ -2,72 +2,68 @@
 file collection, grouping and caching
 =====================================
 
-This namespace portion is pure Python, only depending on the
-:mod:`ae.paths` namespace portion and is providing helpers for
-file managing.
+This namespace portion is pure Python, only depending on the :mod:`ae.paths` namespace portion and is providing helpers
+for file managing.
 
-The classes :class:`FilesRegister`, :class:`RegisteredFile` and
-:class:`CachedFile` collect, group and cache
-available files for to later find the best fitting match for
-a requested purpose.
+Useful for dynamic selection of image/font/audio/resource... files depending on the current user preferences, hardware
+and/or software environment.
 
-Usable for dynamic selection of image/font/audio/... files depending
-on the current user preferences, hardware and/or software environment.
+The class :class:`FilesRegister` collect and group available files for to later find the best fitting match for a
+requested purpose.
+
+The classes :class:`RegisteredFile` and :class:`CachedFile` encapsulate and optionally cache files into file objects.
+The instances of these two classes are compatible to the file object classes provided by the :mod:`pathlib` module.
+But also pure path strings can be used as file objects by the class :class:`FilesRegister` (see also the
+:data:`FileObject` type).
 
 
 registered file
 ---------------
 
-A registered file object represents a single file on your file system and
-can be instantiated from one of the classes :class:`RegisteredFile` or
-:class:`CachedFile` provided by this module/portion::
+A registered file object represents a single file on your file system and can be instantiated from one of the classes
+:class:`RegisteredFile` or :class:`CachedFile` provided by this module/portion::
 
     from ae.files import RegisteredFile
 
     rf = RegisteredFile('path/to/the/file_name.extension')
 
+    assert str(rf) == 'path/to/the/file_name.extension'
     assert rf.path == 'path/to/the/file_name.extension'
     assert rf.stem == 'file_name'
     assert rf.ext == '.extension'
     assert rf.properties == dict()
 
-The :attr:`~RegisteredFile.properties` attribute of the :class:`RegisteredFile`
-instance is empty in the above example because the :attr:`~RegisteredFile.path`
-does not contain folder names with an underscore character.
+The :attr:`~RegisteredFile.properties` attribute of the :class:`RegisteredFile` instance is empty in the above example
+because the :attr:`~RegisteredFile.path` does not contain folder names with an underscore character.
 
 
 file properties
 ^^^^^^^^^^^^^^^
 
-File properties are provided in the :attr:`~RegisteredFile.properties` attribute
-which is a dict instance, where the key is the name of the property.
-Each item of this attribute reflects a property of the registered file.
+File properties are provided in the :attr:`~RegisteredFile.properties` attribute which is a dict instance, where the key
+is the name of the property. Each item of this attribute reflects a property of the registered file.
 
-Property names and values are automatically determined
-via the names of their specified sub-folders. Every sub-folder name containing an
-underscore character in the format <name>_<value> will be interpreted
-as a file property::
+Property names and values are automatically determined via the names of their specified sub-folders. Every sub-folder
+name containing an underscore character in the format <property-name>_<value> will be interpreted as a file property::
 
-    rf = RegisteredFile('name1_69/name2_3.69/name3_whatever/file_name.ext')
-    assert rf.properties['name1'] == 69
-    assert rf.properties['name2'] == 3.69
-    assert rf.properties['name3'] == 'whatever'
+    rf = RegisteredFile('property1_69/property2_3.69/property3_whatever/file_name.ext')
+    assert rf.properties['property1'] == 69
+    assert rf.properties['property2'] == 3.69
+    assert rf.properties['property3'] == 'whatever'
 
-Currently the property types `int`, `float` and `string` are recognized
-and converted into a property value.
+Currently the property types `int`, `float` and `string` are recognized and converted into a property value.
 
 
 cached file
 -----------
 
-A cached file created from the :class:`CachedFile` behaves like a
-:ref:`registered file` and additionally provides the possibility to cache
-parts or the whole file content as well as the file pointer
-of the opened file::
+A cached file created from the :class:`CachedFile` behaves like a :ref:`registered file` and additionally provides the
+possibility to cache parts or the whole file content as well as the file pointer of the opened file::
 
     cf = CachedFile('integer_69/float_3.69/string_whatever/file_name.ext',
                     object_loader=lambda cached_file: open(cached_file.path))
 
+    assert str(cf) == 'integer_69/float_3.69/string_whatever/file_name.ext'
     assert cf.path == 'integer_69/float_3.69/string_whatever/file_name.ext'
     assert cf.stem == 'file_name'
     assert cf.ext == '.ext'
@@ -85,11 +81,11 @@ of the opened file::
 files register
 --------------
 
-A files register does the collection and selection of files for your application,
-for example for to find and select resource files like icon/image or sound files.
+A files register does the collection and selection of files for your application, for example for to find and select
+resource files like icon/image or sound files.
 
-Files can be collected from various places and then be provided by a single
-instance of the class :class:`FilesRegister`::
+Files can be collected from various places and then be provided by a single instance of the class
+:class:`FilesRegister`::
 
     from ae.files import FilesRegister
 
@@ -98,14 +94,12 @@ instance of the class :class:`FilesRegister`::
 
     registered_file = fr.find_file('file_name')
 
-If a file with the base name `file_name` exists in a sub-folder of the two
-provided paths then the :meth:`~FilesRegister.find_file` method will return
-a object of type :class:`RegisteredFile`.
+If a file with the base name (stem) `file_name` exists in a sub-folder of the two provided paths then the
+:meth:`~FilesRegister.find_file` method will return a file object of type :class:`RegisteredFile`.
 
-Several files with the same base name can be collected and registered e.g.
-with different formats, for to be selected by the app by their different
-properties. Assuming your application is providing an icon image in two
-sizes, provided within the following directory structure::
+Several files with the same base name can be collected and registered e.g. with different formats, for to be selected by
+the app by their different properties. Assuming your application is providing an icon image in two sizes, provided
+within the following directory structure::
 
     resources/
         size_72/
@@ -113,49 +107,56 @@ sizes, provided within the following directory structure::
         size_150/
             app_icon.png
 
-First create an instance of :class:`FilesRegister` for to collect both
-image files from the `resources` folder::
+First create an instance of :class:`FilesRegister` for to collect both image files from the `resources` folder::
 
     fr = FilesRegister('resources')
 
-The resulting object `fr` behaves like a dict object,
-where the item key is the file name without extension (app_icon) and
-the item value is a list of instances of :class:`RegisteredFile`.
-Both files in the resources folder are provided as one dict item::
+The resulting object `fr` behaves like a dict object, where the item key is the file name without extension (app_icon)
+and the item value is a list of instances of :class:`RegisteredFile`. Both files in the resources folder are provided as
+one dict item::
 
     assert 'app_icon' in fr
     assert len(fr) == 1
     assert len(fr['app_icon']) == 2
     assert isinstance(fr['app_icon'][0], RegisteredFile)
 
-For to select the appropriate image file you can use the
-:meth:`~FilesRegister.find_file` method::
+For to select the appropriate image file you can use the :meth:`~FilesRegister.find_file` method::
 
     app_icon_image_path = fr.find_file('app_icon', dict(size=current_size))
 
-As a shortcut you can alternatively call the object directly
-(leaving `.find_file` away)::
+As a shortcut you can alternatively call the object directly (leaving `.find_file` away)::
 
     app_icon_image_path = fr('app_icon', dict(size=current_size))
 
-For more complex selections you can use callables passed
-into the :paramref:`~FilesRegister.find_file.property_matcher` amd
-:paramref:`~FilesRegister.find_file.file_sorter` arguments
-of :meth:`~FilesRegister.find_file`.
+For more complex selections you can use callables passed into the :paramref:`~FilesRegister.find_file.property_matcher`
+and :paramref:`~FilesRegister.find_file.file_sorter` arguments of :meth:`~FilesRegister.find_file`.
 
 """
 import glob
 import os
+import pathlib
 from typing import Any, Callable, Dict, Optional, Type, Union
 
-from ae.paths import path_files                 # type: ignore
+from ae.paths import path_files                                                 # type: ignore
 
 
-__version__ = '0.1.6'
+__version__ = '0.1.7'
 
 
-PropertyType = Union[int, float, str]           #: types of property values
-PropertiesType = Dict[str, PropertyType]        #: dict of file properties
+FileObject = Union[str, 'RegisteredFile', 'CachedFile', pathlib.Path, pathlib.PurePath, Any]
+""" file object type, e.g. a file path str or any class or callable where the returned instance/value is either a string
+    or an object with a `stem` attribute (holding the file name w/o extension), like e.g. :class:`CachedFile`,
+    :class:`RegisteredFile`, :class:`pathlib.Path` or :class:`pathlib.PurePath`. 
+"""
+
+PropertyType = Union[int, float, str]                                           #: types of property values
+PropertiesType = Dict[str, PropertyType]                                        #: dict of file properties
+
+
+APPEND_TO_END_OF_FILE_LIST = 999999999
+""" special flag default value for the `first_index` argument of the `add*` methods of :class:`FilesRegister` for to
+    append new file objects to the end of the file object list.
+"""
 
 
 def series_file_name(file_path: str, digits: int = 2, marker: str = " ", create: bool = False) -> str:
@@ -170,10 +171,6 @@ def series_file_name(file_path: str, digits: int = 2, marker: str = " ", create:
     path_stem, ext = os.path.splitext(file_path)
     path_stem += marker
 
-    # following alternative implementation fails if files exits with non-numeric indexes
-    # found_files = sorted(glob.glob(path_stem + "*" + ext), reverse=True)
-    # stem_len = len(path_stem)
-    # index = int(found_files[0][stem_len:stem_len + digits]) + 1 if found_files else 1
     found_files = glob.glob(path_stem + "*" + ext)
     index = len(found_files) + 1
     while True:
@@ -190,34 +187,31 @@ def series_file_name(file_path: str, digits: int = 2, marker: str = " ", create:
 
 class RegisteredFile:
     """ represents a single file. """
-    def __init__(self, path: str, **kwargs):
-        """ initialize registered file instance.
+    def __init__(self, file_path: str, **kwargs):
+        """ initialize registered file_obj instance.
 
-        :param path:            file path.
+        :param file_path:       file path string.
         :param kwargs:          not supported, only there to have compatibility to :class:`CachedFile` for to detect
                                 invalid kwargs.
         """
         assert not kwargs, "RegisteredFile does not have any kwargs - maybe want to use CachedFile as file_class."
-        self.path: str = path                                           #: file path
+        self.path: str = file_path                                      #: file path
         self.stem: str                                                  #: file basename without extension
         self.ext: str                                                   #: file name extension
-        dir_name, base_name = os.path.split(path)
+        dir_name, base_name = os.path.split(file_path)
         self.stem, self.ext = os.path.splitext(base_name)
 
         self.properties: PropertiesType = dict()                        #: file properties
-        # dir_name: str  # PyCharm needs the str type annotation
         for folder in dir_name.split(os.path.sep):
-            # PyCharm assumes dir_name/folder are of type bytes?!?!?
-            # noinspection PyTypeChecker
             parts = folder.split("_", maxsplit=1)
             if len(parts) == 2:
                 self.add_property(*parts)
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: FileObject) -> bool:
         """ allow equality checks.
 
-        :param other:           other object to compare this instance with.
-        :return:                True if both objects contain a file with the same path, else False.
+        :param other:           other file object to compare this instance with.
+        :return:                True if both objects are of this type and contain a file with the same path, else False.
         """
         return isinstance(other, self.__class__) and other.path == self.path
 
@@ -228,8 +222,15 @@ class RegisteredFile:
         """
         return f"{self.__class__.__name__}({self.path!r})"
 
+    def __str__(self):
+        """ return file path.
+
+        :return:    file path string of this file object.
+        """
+        return self.path
+
     def add_property(self, property_name: str, str_value: str):
-        """ add a property to this file instance.
+        """ add a property to this file object instance.
 
         :param property_name:   stem of the property to add.
         :param str_value:       literal of the property value (int/float/str type will be detected).
@@ -244,33 +245,33 @@ class RegisteredFile:
         self.properties[property_name] = property_value
 
 
-def _default_object_loader(file):
+def _default_object_loader(file_obj: FileObject):
     """ file object loader that is opening the file and keeping the handle of the opened file.
 
-    :param file:                file object with a `path` attribute (holding the complete file path).
+    :param file_obj:            file object (path string or obj with `path` attribute holding the complete file path).
     :return:                    file handle to the opened file.
     """
-    return open(file.path)
+    return open(str(file_obj))
 
 
 class CachedFile(RegisteredFile):
-    """ represents a cacheables registered file. """
-    def __init__(self, path: str,
+    """ represents a cacheables registered file object. """
+    def __init__(self, file_path: str,
                  object_loader: Callable[['CachedFile', ], Any] = _default_object_loader, late_loading: bool = True):
-        """ create cached file instance.
+        """ create cached file object instance.
 
-        :param path:            path of the file.
-        :param object_loader:   callable converting the file into a cached object (available
+        :param file_path:       path string of the file.
+        :param object_loader:   callable converting the file_obj into a cached object (available
                                 via :attr:`~CachedFile.loaded_object`).
-        :param late_loading:    pass False for to convert/load file cache early, directly at instantiation.
+        :param late_loading:    pass False for to convert/load file_obj cache early, directly at instantiation.
         """
-        super().__init__(path)
+        super().__init__(file_path)
         self.object_loader = object_loader
         self.late_loading = late_loading
         self._loaded_object = None if late_loading else object_loader(self)
 
     @property
-    def loaded_object(self):
+    def loaded_object(self) -> Any:
         """ loaded object class instance property.
 
         :return: loaded and cached file object.
@@ -282,88 +283,92 @@ class CachedFile(RegisteredFile):
 
 class FilesRegister(dict):
     """ file register catalog. """
-    def __init__(self, *args,
-                 property_matcher: Optional[Callable[[RegisteredFile, ], bool]] = None,
-                 file_sorter: Optional[Callable[[RegisteredFile, ], Any]] = None,
+    def __init__(self, *add_path_args,
+                 property_matcher: Optional[Callable[[FileObject, ], bool]] = None,
+                 file_sorter: Optional[Callable[[FileObject, ], Any]] = None,
                  **add_path_kwargs):
         """ create files register instance.
 
-        This method gets redirected with :paramref:`~FilesRegister.args` and
+        This method gets redirected with :paramref:`~FilesRegister.add_path_args` and
         :paramref:`~FilesRegister.add_path_kwargs` arguments to :meth:`~FilesRegister.add_path`.
 
-        :param args:            if passed then :meth:`~FilesRegister.add_path` will be called with
+        :param add_path_args:   if passed then :meth:`~FilesRegister.add_path` will be called with
                                 this args tuple.
         :param property_matcher: property matcher callable, used as default value by
                                 :meth:`~FilesRegister.find_file` if not passed there.
         :param file_sorter:     file sorter callable, used as default value by
                                 :meth:`~FilesRegister.find_file` if not passed there.
         :param add_path_kwargs: passed onto call of :meth:`~FilesRegister.add_path` if the
-                                :paramref:`FilesRegister.args` got provided by caller.
+                                :paramref:`FilesRegister.add_path_args` got provided by caller.
         """
         super().__init__()
         self.property_watcher = property_matcher
         self.file_sorter = file_sorter
-        if args:
-            self.add_path(*args, **add_path_kwargs)
+        if add_path_args:
+            self.add_path(*add_path_args, **add_path_kwargs)
 
-    def __call__(self, *args, **kwargs):
-        """ args and kwargs will be completely redirected to :meth:`~FilesRegister.find_file`. """
-        return self.find_file(*args, **kwargs)
+    def __call__(self, *find_args, **find_kwargs) -> Optional[FileObject]:
+        """ add_path_args and kwargs will be completely redirected to :meth:`~FilesRegister.find_file`. """
+        return self.find_file(*find_args, **find_kwargs)
 
-    def add_files_register(self, files_register: 'FilesRegister', append: bool = False):
+    def add_files_register(self, files_register: 'FilesRegister', first_index: int = APPEND_TO_END_OF_FILE_LIST):
         """ add files from another :class:`FilesRegister` instance.
 
-        :param files_register:  files register instance containing the file to be added.
-        :param append:          pass True for to add the files in each name's register to the end.
+        :param files_register:  files register instance containing the file_obj to be added.
+        :param first_index:     pass list index -n...n-1 for to insert the first file_obj in each name's register list.
+                                Values greater than n (len(file_list)) will append the file_obj to the end of the file
+                                object list.
         """
         for _name, files in files_register.items():
-            index = len(files) if append else 0
-            for file in files:
-                self.add_file(file, index=index)
+            index = first_index
+            for file_obj in files:
+                self.add_file(file_obj, first_index=index)
                 index += 1
 
-    def add_file(self, file: Union[str, Any], index: int = -1):
+    def add_file(self, file_obj: FileObject, first_index: int = APPEND_TO_END_OF_FILE_LIST):
         """ add a single file to the list of this dict mapped by the file-name/stem as dict key.
 
-        :param file:            either file path string or any object with a `stem` attribute.
-        :param index:           pass index 0...n-1 for to insert the file in the name's register list.
+        :param file_obj:        either file path string or any object with a `stem` attribute.
+        :param first_index:     pass list index -n...n-1 for to insert the first file in the name's register list.
+                                Values greater than n (len(file_list)) will append the file to the end of the file list.
         """
-        name = os.path.splitext(os.path.basename(file))[0] if isinstance(file, str) else file.stem
-        if name not in self:
-            self[name] = [file]
-        elif index == -1:
-            self[name].append(file)
+        name = os.path.splitext(os.path.basename(file_obj))[0] if isinstance(file_obj, str) else file_obj.stem
+        if name in self:
+            self[name].insert(min(first_index, len(self[name])), file_obj)
         else:
-            self[name].insert(index, file)
+            self[name] = [file_obj]
 
-    def add_path(self, file_path_mask: str, recursive: bool = True,
-                 file_class: Type[Any] = RegisteredFile, **init_kwargs) -> 'FilesRegister':
-        """ add files found in folder specified by :paramref:`~add_path.path`.
+    def add_path(self, *file_path_masks: str, recursive: bool = True, first_index: int = APPEND_TO_END_OF_FILE_LIST,
+                 file_class: Type[FileObject] = RegisteredFile, **init_kwargs) -> 'FilesRegister':
+        """ add files found in the folder(s) specified by the :paramref:`~add_path.file_path_masks` args.
 
-        :param file_path_mask:  glob file path mask (with optional wildcards) specifying the files to
-                                collect (by default including the sub-folders).
+        :param file_path_masks: file path masks (with optional wildcards and :data:`~ae.paths.PATH_PLACEHOLDERS`)
+                                specifying the files to collect (by default including the sub-folders).
         :param recursive:       pass False to only collect the given folder (ignoring sub-folders).
-        :param file_class:      pass str or any class or callable where the returned instance/value is either
-                                a string or an object with a `stem` attribute (holding the file name w/o extension),
-                                like e.g. :class:`CachedFile`, :class:`RegisteredFile` or `pathlib.PurePath`.
-                                Each found file will passed to the class constructor and added to the
-                                list which is a item of this dict.
-        :param init_kwargs:     additional/optional kwargs passed onto the used file_class. Pass e.g.
+        :param first_index:     pass list index -n...n-1 for to insert the first file_obj in each name's register list.
+                                Values greater than n (len(file_list)) will append the file_obj to the end of the file
+                                object list.
+        :param file_class:      The used file object class (see :data:`FileObject`). Each found file object will passed
+                                to the class constructor (callable) and added to the list which is a item of this dict.
+        :param init_kwargs:     additional/optional kwargs passed onto the used :paramref:`.file_class`. Pass e.g.
                                 the object_loader to use, if :paramref:`~add_path.file_class` is
                                 :class:`CachedFile` (instead of the default: :class:`RegisteredFile`).
         :return:                this instance.
         """
-        for file in path_files(file_path_mask, recursive=recursive, file_class=file_class, **init_kwargs):
-            self.add_file(file)
+        for file_path_mask in file_path_masks:
+            index = first_index
+            for file in path_files(file_path_mask, recursive=recursive, file_class=file_class, **init_kwargs):
+                self.add_file(file, first_index=index)
+                index += 1
         return self
 
     def find_file(self, name: str, properties: Optional[PropertiesType] = None,
-                  property_matcher: Optional[Callable[[RegisteredFile, ], bool]] = None,
-                  file_sorter: Optional[Callable[[RegisteredFile, ], Any]] = None,
-                  ) -> Optional[RegisteredFile]:
-        """ find file in this register via properties, property matcher callables and/or file sorter.
+                  property_matcher: Optional[Callable[[FileObject, ], bool]] = None,
+                  file_sorter: Optional[Callable[[FileObject, ], Any]] = None,
+                  ) -> Optional[FileObject]:
+        """ find file_obj in this register via properties, property matcher callables and/or file sorter.
 
-        :param name:            file name (without extension) to find.
+        :param name:            file name (stem without extension) to find.
         :param properties:      properties for to select the correct file.
         :param property_matcher: callable for to match the correct file.
         :param file_sorter:     callable for to sort resulting match results.
@@ -390,18 +395,15 @@ class FilesRegister(dict):
             file = files[0]
         return file
 
-    def reclassify(self, file_class: Type[Any] = CachedFile, **init_kwargs):
+    def reclassify(self, file_class: Type[FileObject] = CachedFile, **init_kwargs):
         """ re-instantiate all name's file registers items to instances of the class :paramref:`~.file_class`.
 
-        :param file_class:      pass str or any class or callable where the returned instance/value is either
-                                a string or an object with a `stem` attribute (holding the file name w/o extension),
-                                like e.g. :class:`CachedFile`, :class:`RegisteredFile` or `pathlib.PurePath`.
-                                Each found file will passed to the class constructor and added to the
-                                list which is a item of this dict.
+        :param file_class:      The new file object class (see :data:`FileObject`). Each found file object will passed
+                                to the class constructor (callable) and replace the file object in the name' file list.
         :param init_kwargs:     additional/optional kwargs passed onto the used file_class. Pass e.g.
                                 the object_loader to use, if :paramref:`~.file_class` is
-                                :class:`CachedFile` (the default file class).
+                                :class:`CachedFile` (the default file_obj class).
         """
         for _name, files in self.items():
             for idx, file in enumerate(files):
-                files[idx] = file_class(file if isinstance(file, str) else file.path, **init_kwargs)
+                files[idx] = file_class(str(file), **init_kwargs)           # type: ignore

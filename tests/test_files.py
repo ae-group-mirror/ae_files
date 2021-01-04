@@ -1,10 +1,10 @@
 """ test module for the ae.files namespace portion. """
 import glob
 import os
-from io import TextIOWrapper
-
+import pathlib
 import pytest
 import shutil
+from io import TextIOWrapper
 
 from ae.files import RegisteredFile, CachedFile, FilesRegister, series_file_name
 
@@ -194,22 +194,34 @@ class TestCachedFile:
 
 class TestFilesRegister:
     """ test FilesRegister class. """
-    def test_init_min(self):
+    def test_add_file(self):
         fr = FilesRegister()
-        assert not fr.property_watcher
-        assert not fr.file_sorter
-        assert not fr.keys()
-        assert not fr.values()
+        fr.add_file("test.xx")
+        fr.add_file("test.yy")
+        fr.add_file("test.yy")
 
-    def test_init_property_matcher(self):
-        fr = FilesRegister(property_matcher=property_matcher_mock)
-        assert fr.property_watcher is property_matcher_mock
+        fr.add_file("test3")
+        fr.add_file("test3.a")
+        fr.add_file("test3.b")
 
-    def test_init_file_sorter(self):
-        fr = FilesRegister(file_sorter=file_sorter_mock)
-        assert fr.file_sorter is file_sorter_mock
+    def test_add_files_register(self):
+        fr = FilesRegister()
+        fr.add_file("test.xx")
+        fr.add_file("test.yy")
+        fr.add_file("test3")
 
-    def test_init_add_path(self, files_to_test):
+        fr2 = FilesRegister()
+        fr2.add_file("dir/test.zz")
+        fr2.add_file("dir3/test6")
+
+        fr.add_files_register(fr2)
+        assert len(fr) == 3
+        assert len(fr['test']) == 3
+        assert fr.find_file('test')
+        assert fr.find_file('test3')
+        assert fr.find_file('test6')
+
+    def test_add_path_init(self, files_to_test):
         wop, wip = files_to_test
         fr = FilesRegister(os.path.join(file_root, '**'))
         assert len(fr) == 1
@@ -221,7 +233,7 @@ class TestFilesRegister:
         assert all(_.ext == file_ext for _ in files)
         assert all(_.properties in (dict(), file_properties) for _ in files)
 
-    def test_init_add_path_redirect(self, files_to_test):
+    def test_add_path_redirect(self, files_to_test):
         wop, wip = files_to_test
         fri = FilesRegister(os.path.join(file_root, '**'))
         fr = FilesRegister().add_path(os.path.join(file_root, '**'))
@@ -239,6 +251,24 @@ class TestFilesRegister:
         fr.add_file('tests/test_files.py')
         assert old_len < len(fr)
         assert 'test_files' in fr
+
+    def test_cache_file_class(self, files_to_test):
+        wop, wip = files_to_test
+        fr = FilesRegister(os.path.join(file_root, '**'), file_class=CachedFile, object_loader=file_loader_mock_func)
+        assert len(fr) == 1
+        assert file_name in fr
+        files = fr[file_name]
+        assert len(files) == 2
+        assert all(_.path in (wop, wip) for _ in files)
+        assert all(_.stem == file_name for _ in files)
+        assert all(_.ext == file_ext for _ in files)
+        assert all(_.properties in (dict(), file_properties) for _ in files)
+
+        assert all(isinstance(_, CachedFile) for _ in files)
+
+    def test_call_find_file_redirect(self, files_to_test):
+        fr = FilesRegister(file_root)
+        assert fr(file_name, properties=file_properties) == fr.find_file(file_name, properties=file_properties)
 
     def test_find_file_by_name(self, files_to_test):
         fr = FilesRegister(os.path.join(file_root, '**'))
@@ -280,40 +310,20 @@ class TestFilesRegister:
         fr = FilesRegister(file_sorter=file_sorter_mock)
         assert fr.file_sorter is file_sorter_mock
 
-    def test_call_find_file_redirect(self, files_to_test):
-        fr = FilesRegister(file_root)
-        assert fr(file_name, properties=file_properties) == fr.find_file(file_name, properties=file_properties)
-
-    def test_cache_file_class(self, files_to_test):
-        wop, wip = files_to_test
-        fr = FilesRegister(os.path.join(file_root, '**'), file_class=CachedFile, object_loader=file_loader_mock_func)
-        assert len(fr) == 1
-        assert file_name in fr
-        files = fr[file_name]
-        assert len(files) == 2
-        assert all(_.path in (wop, wip) for _ in files)
-        assert all(_.stem == file_name for _ in files)
-        assert all(_.ext == file_ext for _ in files)
-        assert all(_.properties in (dict(), file_properties) for _ in files)
-
-        assert all(isinstance(_, CachedFile) for _ in files)
-
-    def test_add_files_register(self):
+    def test_init_min(self):
         fr = FilesRegister()
-        fr.add_file("test.xx")
-        fr.add_file("test.yy")
-        fr.add_file("test3")
+        assert not fr.property_watcher
+        assert not fr.file_sorter
+        assert not fr.keys()
+        assert not fr.values()
 
-        fr2 = FilesRegister()
-        fr2.add_file("dir/test.zz")
-        fr2.add_file("dir3/test6")
+    def test_init_property_matcher(self):
+        fr = FilesRegister(property_matcher=property_matcher_mock)
+        assert fr.property_watcher is property_matcher_mock
 
-        fr.add_files_register(fr2)
-        assert len(fr) == 3
-        assert len(fr['test']) == 3
-        assert fr.find_file('test')
-        assert fr.find_file('test3')
-        assert fr.find_file('test6')
+    def test_init_file_sorter(self):
+        fr = FilesRegister(file_sorter=file_sorter_mock)
+        assert fr.file_sorter is file_sorter_mock
 
     def test_reclassify(self):
         fr = FilesRegister()
@@ -326,3 +336,7 @@ class TestFilesRegister:
         assert all(isinstance(file, CachedFile) for file in fr['ttt'])
         fr.reclassify(file_class=RegisteredFile)
         assert all(isinstance(file, RegisteredFile) for file in fr['ttt'])
+        fr.reclassify(file_class=pathlib.Path)
+        assert all(isinstance(file, pathlib.Path) for file in fr['ttt'])
+        fr.reclassify(file_class=pathlib.PurePath)
+        assert all(isinstance(file, pathlib.PurePath) for file in fr['ttt'])
