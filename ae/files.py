@@ -135,12 +135,13 @@ and :paramref:`~FilesRegister.find_file.file_sorter` arguments of :meth:`~FilesR
 import glob
 import os
 import pathlib
+import sys
 from typing import Any, Callable, Dict, Optional, Type, Union
 
 from ae.paths import path_files                                                 # type: ignore
 
 
-__version__ = '0.1.7'
+__version__ = '0.1.8'
 
 
 FileObject = Union[str, 'RegisteredFile', 'CachedFile', pathlib.Path, pathlib.PurePath, Any]
@@ -153,7 +154,7 @@ PropertyType = Union[int, float, str]                                           
 PropertiesType = Dict[str, PropertyType]                                        #: dict of file properties
 
 
-APPEND_TO_END_OF_FILE_LIST = 999999999
+APPEND_TO_END_OF_FILE_LIST = sys.maxsize
 """ special flag default value for the `first_index` argument of the `add*` methods of :class:`FilesRegister` for to
     append new file objects to the end of the file object list.
 """

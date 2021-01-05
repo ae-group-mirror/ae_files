@@ -39,6 +39,8 @@ if __name__ == "__main__":
         #   * using ['ae.literal'] `setup sdist bdist_wheel` fails with "package directory 'ae/literal' does not exist"
         # - ['ae.<sub-package1-name>', ...] for sub-package(s)
         packages=setuptools.find_namespace_packages(include=nev['find_packages_include']),
+        package_data={'': nev['package_resources']},
+        # include_package_data=True,    # uncommenting this line results in NOT including package resources into sdist
         python_requires=">=3.6",
         install_requires=nev['install_require'],
         setup_requires=nev['setup_require'],
