@@ -90,7 +90,7 @@ Files can be collected from various places and then be provided by a single inst
     from ae.files import FilesRegister
 
     fr = FilesRegister('first/path/to/collect')
-    fr.add_path('second/path/to/collect/files/from')
+    fr.add_paths('second/path/to/collect/files/from')
 
     registered_file = fr.find_file('file_name')
 
@@ -136,12 +136,12 @@ import glob
 import os
 import pathlib
 import sys
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, Dict, Iterable, Optional, Type, Union
 
 from ae.paths import path_files                                                 # type: ignore
 
 
-__version__ = '0.1.8'
+__version__ = '0.1.9'
 
 
 FileObject = Union[str, 'RegisteredFile', 'CachedFile', pathlib.Path, pathlib.PurePath, Any]
@@ -155,8 +155,12 @@ PropertiesType = Dict[str, PropertyType]                                        
 
 
 APPEND_TO_END_OF_FILE_LIST = sys.maxsize
-""" special flag default value for the `first_index` argument of the `add*` methods of :class:`FilesRegister` for to
-    append new file objects to the end of the file object list.
+""" special flag default value for the `first_index` argument of the `add_*` methods of :class:`FilesRegister` for to
+    append new file objects to the end of the name's register file object list.
+"""
+INSERT_AT_BEGIN_OF_FILE_LIST = -APPEND_TO_END_OF_FILE_LIST
+""" special flag default value for the `first_index` argument of the `add_*` methods of :class:`FilesRegister` for to
+    insert new file objects always at the begin of the name's register file object list.
 """
 
 
@@ -291,77 +295,103 @@ class FilesRegister(dict):
         """ create files register instance.
 
         This method gets redirected with :paramref:`~FilesRegister.add_path_args` and
-        :paramref:`~FilesRegister.add_path_kwargs` arguments to :meth:`~FilesRegister.add_path`.
+        :paramref:`~FilesRegister.add_path_kwargs` arguments to :meth:`~FilesRegister.add_paths`.
 
-        :param add_path_args:   if passed then :meth:`~FilesRegister.add_path` will be called with
+        :param add_path_args:   if passed then :meth:`~FilesRegister.add_paths` will be called with
                                 this args tuple.
         :param property_matcher: property matcher callable, used as default value by
                                 :meth:`~FilesRegister.find_file` if not passed there.
         :param file_sorter:     file sorter callable, used as default value by
                                 :meth:`~FilesRegister.find_file` if not passed there.
-        :param add_path_kwargs: passed onto call of :meth:`~FilesRegister.add_path` if the
+        :param add_path_kwargs: passed onto call of :meth:`~FilesRegister.add_paths` if the
                                 :paramref:`FilesRegister.add_path_args` got provided by caller.
         """
         super().__init__()
         self.property_watcher = property_matcher
         self.file_sorter = file_sorter
         if add_path_args:
-            self.add_path(*add_path_args, **add_path_kwargs)
+            self.add_paths(*add_path_args, **add_path_kwargs)
 
     def __call__(self, *find_args, **find_kwargs) -> Optional[FileObject]:
         """ add_path_args and kwargs will be completely redirected to :meth:`~FilesRegister.find_file`. """
         return self.find_file(*find_args, **find_kwargs)
 
-    def add_files_register(self, files_register: 'FilesRegister', first_index: int = APPEND_TO_END_OF_FILE_LIST):
-        """ add files from another :class:`FilesRegister` instance.
-
-        :param files_register:  files register instance containing the file_obj to be added.
-        :param first_index:     pass list index -n...n-1 for to insert the first file_obj in each name's register list.
-                                Values greater than n (len(file_list)) will append the file_obj to the end of the file
-                                object list.
-        """
-        for _name, files in files_register.items():
-            index = first_index
-            for file_obj in files:
-                self.add_file(file_obj, first_index=index)
-                index += 1
-
     def add_file(self, file_obj: FileObject, first_index: int = APPEND_TO_END_OF_FILE_LIST):
         """ add a single file to the list of this dict mapped by the file-name/stem as dict key.
 
         :param file_obj:        either file path string or any object with a `stem` attribute.
-        :param first_index:     pass list index -n...n-1 for to insert the first file in the name's register list.
-                                Values greater than n (len(file_list)) will append the file to the end of the file list.
+        :param first_index:     pass list index -n-1..n-1 for to insert the :paramref:`.file_obj` in the name's list.
+                                Values greater than n (==len(file_list)) will append the file_obj to the end of the file
+                                object list and values less than n-1 will insert the file_obj to the begin.
         """
         name = os.path.splitext(os.path.basename(file_obj))[0] if isinstance(file_obj, str) else file_obj.stem
         if name in self:
-            self[name].insert(min(first_index, len(self[name])), file_obj)
+            list_len = len(self[name])
+            if first_index < 0:
+                first_index = max(0, list_len + first_index + 1)
+            else:
+                first_index = min(first_index, list_len)
+            self[name].insert(first_index, file_obj)
         else:
             self[name] = [file_obj]
 
-    def add_path(self, *file_path_masks: str, recursive: bool = True, first_index: int = APPEND_TO_END_OF_FILE_LIST,
-                 file_class: Type[FileObject] = RegisteredFile, **init_kwargs) -> 'FilesRegister':
-        """ add files found in the folder(s) specified by the :paramref:`~add_path.file_path_masks` args.
+    def add_files(self, files: Iterable[FileObject], first_index: int = APPEND_TO_END_OF_FILE_LIST):
+        """ add files from another :class:`FilesRegister` instance.
+
+        :param files:           Iterable with file objects to be added.
+        :param first_index:     pass list index -n-1..n-1 for to insert the first file_obj in each name's register list.
+                                Values greater than n (==len(file_list)) will append the file_obj to the end of the file
+                                object list. The order of the added items will be unchanged if this value is greater
+                                or equal to zero. Negative values will add the items from :paramref:`.files` in reversed
+                                order and **after** the item specified by this index value (so passing -1 will append
+                                the items to the end in reversed order, while passing -(n+1) will insert them at the
+                                begin in reversed order).
+        """
+        increment = -1 if first_index < 0 else 1
+        for file_obj in files:
+            self.add_file(file_obj, first_index=first_index)
+            first_index += increment
+
+    def add_paths(self, *file_path_masks: str, recursive: bool = True, first_index: int = APPEND_TO_END_OF_FILE_LIST,
+                  file_class: Type[FileObject] = RegisteredFile, **init_kwargs) -> 'FilesRegister':
+        """ add files found in the folder(s) specified by the :paramref:`~add_paths.file_path_masks` args.
 
         :param file_path_masks: file path masks (with optional wildcards and :data:`~ae.paths.PATH_PLACEHOLDERS`)
                                 specifying the files to collect (by default including the sub-folders).
         :param recursive:       pass False to only collect the given folder (ignoring sub-folders).
-        :param first_index:     pass list index -n...n-1 for to insert the first file_obj in each name's register list.
-                                Values greater than n (len(file_list)) will append the file_obj to the end of the file
-                                object list.
+        :param first_index:     pass list index -n-1..n-1 for to insert the first file_obj in each name's register list.
+                                Values greater than n (==len(file_list)) will append the file_obj to the end of the file
+                                object list. The order of the added items will be unchanged if this value is greater
+                                or equal to zero. Negative values will add the found items in reversed
+                                order and **after** the item specified by this index value (so passing -1 will append
+                                the items to the end in reversed order, while passing -(n+1) will insert them at the
+                                begin in reversed order).
         :param file_class:      The used file object class (see :data:`FileObject`). Each found file object will passed
                                 to the class constructor (callable) and added to the list which is a item of this dict.
         :param init_kwargs:     additional/optional kwargs passed onto the used :paramref:`.file_class`. Pass e.g.
-                                the object_loader to use, if :paramref:`~add_path.file_class` is
+                                the object_loader to use, if :paramref:`~add_paths.file_class` is
                                 :class:`CachedFile` (instead of the default: :class:`RegisteredFile`).
         :return:                this instance.
         """
-        for file_path_mask in file_path_masks:
-            index = first_index
-            for file in path_files(file_path_mask, recursive=recursive, file_class=file_class, **init_kwargs):
-                self.add_file(file, first_index=index)
-                index += 1
+        for mask in file_path_masks:
+            self.add_files(path_files(mask, recursive=recursive, file_class=file_class, **init_kwargs),
+                           first_index=first_index)
         return self
+
+    def add_register(self, files_register: 'FilesRegister', first_index: int = APPEND_TO_END_OF_FILE_LIST):
+        """ add files from another :class:`FilesRegister` instance.
+
+        :param files_register:  files register instance containing the file_obj to be added.
+        :param first_index:     pass list index -n-1..n-1 for to insert the first file_obj in each name's register list.
+                                Values greater than n (==len(file_list)) will append the file_obj to the end of the file
+                                object list. The order of the added items will be unchanged if this value is greater
+                                or equal to zero. Negative values will add the found items in reversed
+                                order and **after** the item specified by this index value (so passing -1 will append
+                                the items to the end in reversed order, while passing -(n+1) will insert them at the
+                                begin in reversed order).
+        """
+        for files in files_register.values():
+            self.add_files(files, first_index=first_index)
 
     def find_file(self, name: str, properties: Optional[PropertiesType] = None,
                   property_matcher: Optional[Callable[[FileObject, ], bool]] = None,

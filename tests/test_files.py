@@ -204,7 +204,48 @@ class TestFilesRegister:
         fr.add_file("test3.a")
         fr.add_file("test3.b")
 
-    def test_add_files_register(self):
+        assert len(fr) == 2
+        assert 'test' in fr
+        assert 'test3' in fr
+        assert fr.find_file('test')
+        assert fr.find_file('test3')
+
+        assert len(fr['test']) == 3
+        assert fr['test'] == ['test.xx', 'test.yy', 'test.yy']
+
+        assert len(fr['test3']) == 3
+        assert fr['test3'] == ['test3', 'test3.a', 'test3.b']
+
+        assert fr.find_file('test6') is None
+
+    def test_add_file_reversed(self):
+        fr = FilesRegister()
+        fr.add_file("test.xx", first_index=-1)
+        fr.add_file("test.yy", first_index=-2)
+        fr.add_file("test.zz", first_index=-3)
+        assert fr['test'] == ['test.zz', 'test.yy', 'test.xx']
+
+    def test_add_files(self):
+        fr = FilesRegister()
+        files1 = ['tst.a', 'tst.b', 'tst.c']
+        fr.add_files(files1)
+        assert fr['tst'] == files1
+
+        files2 = ['tst.1', 'tst.z', 'tst']
+        fr.add_files(tuple(files2), first_index=0)
+        assert fr['tst'] == files2 + files1
+
+    def test_add_files_reversed(self):
+        fr = FilesRegister()
+        files1 = ['tst.a', 'tst.b', 'tst.c']
+        fr.add_files(files1, first_index=-1)
+        assert fr['tst'] == list(reversed(files1))
+
+        files2 = ['tst.1', 'tst.z', 'tst']
+        fr.add_files(tuple(files2), first_index=-4)
+        assert fr['tst'] == list(reversed(files1 + files2))
+
+    def test_add_register(self):
         fr = FilesRegister()
         fr.add_file("test.xx")
         fr.add_file("test.yy")
@@ -214,7 +255,7 @@ class TestFilesRegister:
         fr2.add_file("dir/test.zz")
         fr2.add_file("dir3/test6")
 
-        fr.add_files_register(fr2)
+        fr.add_register(fr2)
         assert len(fr) == 3
         assert len(fr['test']) == 3
         assert fr.find_file('test')
@@ -236,7 +277,7 @@ class TestFilesRegister:
     def test_add_path_redirect(self, files_to_test):
         wop, wip = files_to_test
         fri = FilesRegister(os.path.join(file_root, '**'))
-        fr = FilesRegister().add_path(os.path.join(file_root, '**'))
+        fr = FilesRegister().add_paths(os.path.join(file_root, '**'))
         assert len(fri) == len(fr)
         assert file_name in fr
         files = fr[file_name]
