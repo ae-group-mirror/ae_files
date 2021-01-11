@@ -6,10 +6,46 @@ import pytest
 import shutil
 from io import TextIOWrapper
 
-from ae.files import RegisteredFile, CachedFile, FilesRegister, series_file_name
+from ae.files import file_transfer_progress, series_file_name, RegisteredFile, CachedFile, FilesRegister
 
 
 class TestHelpers:
+    def test_file_transfer_progress_transferred(self):
+        assert file_transfer_progress(0) == "0 Bytes"
+        assert file_transfer_progress(1023) == "1023 Bytes"
+
+        assert file_transfer_progress(1024) == "1 KBytes"
+        assert file_transfer_progress(1025) == "1.001 KBytes"
+        assert file_transfer_progress(1026) == "1.002 KBytes"
+        assert file_transfer_progress(1027) == "1.003 KBytes"
+        assert file_transfer_progress(1028) == "1.004 KBytes"
+        assert file_transfer_progress(1029) == "1.005 KBytes"
+        assert file_transfer_progress(1030) == "1.006 KBytes"
+
+        assert file_transfer_progress(1023 * 1024) == "1023 KBytes"
+        assert file_transfer_progress(1024 * 1024 - 1) == "1023.999 KBytes"
+        assert file_transfer_progress(1024 * 1024) == "1 MBytes"
+        assert file_transfer_progress(1024 * 1024 * 1024 - 1) == "1024.000 MBytes"
+        assert file_transfer_progress(1024 * 1024 * 1024) == "1 GBytes"
+        assert file_transfer_progress(1024 * 1024 * 1024 * 1024 - 1) == "1024.000 GBytes"
+        assert file_transfer_progress(1024 * 1024 * 1024 * 1024) == "1 TBytes"
+
+        assert file_transfer_progress(1024 * 1024 * 1024 * 1024 + 1) == "1.000 TBytes"
+        assert file_transfer_progress(1024 * 1024 * 1024 * 1024 + 1025 * 1024) == "1.000 TBytes"
+        assert file_transfer_progress(1024 * 1024 * 1024 * 1024 + 1024 * 1024 * 1024) == "1.001 TBytes"
+
+    def test_file_transfer_progress_with_total(self):
+        assert file_transfer_progress(0, 1) == "0 / 1 Bytes"
+        assert file_transfer_progress(0, 1023) == "0 / 1023 Bytes"
+        assert file_transfer_progress(0, 1024) == "0 Bytes / 1 KBytes"
+
+    def test_file_transfer_progress_done(self):
+        assert file_transfer_progress(1, 1) == "1 Bytes"
+        assert file_transfer_progress(1024, 1024) == "1 KBytes"
+        assert file_transfer_progress(1024 * 1024, 1024 * 1024) == "1 MBytes"
+        assert file_transfer_progress(1024 * 1024 * 1024, 1024 * 1024 * 1024) == "1 GBytes"
+        assert file_transfer_progress(1024 * 1024 * 1024 * 1024, 1024 * 1024 * 1024 * 1024) == "1 TBytes"
+
     def test_series_file_name_basics(self):
         assert series_file_name("tests/series_tests.tst") == "tests/series_tests 01.tst"
         assert series_file_name("tests/series_tests.tst", marker='_copy_') == "tests/series_tests_copy_01.tst"

@@ -136,12 +136,12 @@ import glob
 import os
 import pathlib
 import sys
-from typing import Any, Callable, Dict, Iterable, Optional, Type, Union
+from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Type, Union
 
 from ae.paths import path_files                                                 # type: ignore
 
 
-__version__ = '0.1.9'
+__version__ = '0.1.10'
 
 
 FileObject = Union[str, 'RegisteredFile', 'CachedFile', pathlib.Path, pathlib.PurePath, Any]
@@ -162,6 +162,29 @@ INSERT_AT_BEGIN_OF_FILE_LIST = -APPEND_TO_END_OF_FILE_LIST
 """ special flag default value for the `first_index` argument of the `add_*` methods of :class:`FilesRegister` for to
     insert new file objects always at the begin of the name's register file object list.
 """
+
+
+def file_transfer_progress(transferred_bytes: int, total_bytes: int = 0) -> str:
+    """ return string to display the transfer progress of transferred bytes in short and user readable format.
+
+    :param transferred_bytes:   number of transferred bytes.
+    :param total_bytes:         number of total bytes.
+    :return:                    formatted string to display progress of currently running transfer.
+    """
+    def _unit_size(size: float) -> Tuple[float, str]:
+        for unit in ("", "K", "M", "G", "T"):
+            if size < 1024.0:
+                break
+            size /= 1024.0
+        return size, unit + "Bytes"
+
+    trs, tru = _unit_size(transferred_bytes)
+    if total_bytes and transferred_bytes != total_bytes:
+        tos, tou = _unit_size(total_bytes)
+        tru = ("" if tru == tou else tru + " ") + "/ {tos:.{de}f} {tou}".format(
+            tos=tos, de=3 if tos % 1 > 0 else 0, tou=tou)
+
+    return "{trs:.{de}f} {tru}".format(trs=trs, de=3 if trs % 1 > 0 else 0, tru=tru)
 
 
 def series_file_name(file_path: str, digits: int = 2, marker: str = " ", create: bool = False) -> str:
