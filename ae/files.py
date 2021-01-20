@@ -136,12 +136,12 @@ import glob
 import os
 import pathlib
 import sys
-from typing import Any, Callable, Dict, Iterable, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Type, Union
 
 from ae.paths import path_files                                                 # type: ignore
 
 
-__version__ = '0.1.10'
+__version__ = '0.1.11'
 
 
 FileObject = Union[str, 'RegisteredFile', 'CachedFile', pathlib.Path, pathlib.PurePath, Any]
@@ -214,7 +214,7 @@ def series_file_name(file_path: str, digits: int = 2, marker: str = " ", create:
 
 
 class RegisteredFile:
-    """ represents a single file. """
+    """ represents a single file - see also :ref:`registered file` examples. """
     def __init__(self, file_path: str, **kwargs):
         """ initialize registered file_obj instance.
 
@@ -283,7 +283,7 @@ def _default_object_loader(file_obj: FileObject):
 
 
 class CachedFile(RegisteredFile):
-    """ represents a cacheables registered file object. """
+    """ represents a cacheables registered file object - see also :ref:`cached file` examples. """
     def __init__(self, file_path: str,
                  object_loader: Callable[['CachedFile', ], Any] = _default_object_loader, late_loading: bool = True):
         """ create cached file object instance.
@@ -310,7 +310,7 @@ class CachedFile(RegisteredFile):
 
 
 class FilesRegister(dict):
-    """ file register catalog. """
+    """ file register catalog - see also :ref:`files register` examples. """
     def __init__(self, *add_path_args,
                  property_matcher: Optional[Callable[[FileObject, ], bool]] = None,
                  file_sorter: Optional[Callable[[FileObject, ], Any]] = None,
@@ -358,7 +358,7 @@ class FilesRegister(dict):
         else:
             self[name] = [file_obj]
 
-    def add_files(self, files: Iterable[FileObject], first_index: int = APPEND_TO_END_OF_FILE_LIST):
+    def add_files(self, files: Iterable[FileObject], first_index: int = APPEND_TO_END_OF_FILE_LIST) -> List[str]:
         """ add files from another :class:`FilesRegister` instance.
 
         :param files:           Iterable with file objects to be added.
@@ -369,14 +369,18 @@ class FilesRegister(dict):
                                 order and **after** the item specified by this index value (so passing -1 will append
                                 the items to the end in reversed order, while passing -(n+1) will insert them at the
                                 begin in reversed order).
+        :return:                list of paths of the added files.
         """
         increment = -1 if first_index < 0 else 1
+        added_file_paths = list()
         for file_obj in files:
             self.add_file(file_obj, first_index=first_index)
+            added_file_paths.append(str(file_obj))
             first_index += increment
+        return added_file_paths
 
     def add_paths(self, *file_path_masks: str, recursive: bool = True, first_index: int = APPEND_TO_END_OF_FILE_LIST,
-                  file_class: Type[FileObject] = RegisteredFile, **init_kwargs) -> 'FilesRegister':
+                  file_class: Type[FileObject] = RegisteredFile, **init_kwargs) -> List[str]:
         """ add files found in the folder(s) specified by the :paramref:`~add_paths.file_path_masks` args.
 
         :param file_path_masks: file path masks (with optional wildcards and :data:`~ae.paths.PATH_PLACEHOLDERS`)
@@ -394,14 +398,16 @@ class FilesRegister(dict):
         :param init_kwargs:     additional/optional kwargs passed onto the used :paramref:`.file_class`. Pass e.g.
                                 the object_loader to use, if :paramref:`~add_paths.file_class` is
                                 :class:`CachedFile` (instead of the default: :class:`RegisteredFile`).
-        :return:                this instance.
+        :return:                list of paths of the added files.
         """
+        added_file_paths = list()
         for mask in file_path_masks:
-            self.add_files(path_files(mask, recursive=recursive, file_class=file_class, **init_kwargs),
-                           first_index=first_index)
-        return self
+            added_file_paths.extend(
+                self.add_files(path_files(mask, recursive=recursive, file_class=file_class, **init_kwargs),
+                               first_index=first_index))
+        return added_file_paths
 
-    def add_register(self, files_register: 'FilesRegister', first_index: int = APPEND_TO_END_OF_FILE_LIST):
+    def add_register(self, files_register: 'FilesRegister', first_index: int = APPEND_TO_END_OF_FILE_LIST) -> List[str]:
         """ add files from another :class:`FilesRegister` instance.
 
         :param files_register:  files register instance containing the file_obj to be added.
@@ -412,9 +418,12 @@ class FilesRegister(dict):
                                 order and **after** the item specified by this index value (so passing -1 will append
                                 the items to the end in reversed order, while passing -(n+1) will insert them at the
                                 begin in reversed order).
+        :return:                list of paths of the added files.
         """
+        added_file_paths = list()
         for files in files_register.values():
-            self.add_files(files, first_index=first_index)
+            added_file_paths.extend(self.add_files(files, first_index=first_index))
+        return added_file_paths
 
     def find_file(self, name: str, properties: Optional[PropertiesType] = None,
                   property_matcher: Optional[Callable[[FileObject, ], bool]] = None,

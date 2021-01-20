@@ -313,11 +313,12 @@ class TestFilesRegister:
     def test_add_path_redirect(self, files_to_test):
         wop, wip = files_to_test
         fri = FilesRegister(os.path.join(file_root, '**'))
-        fr = FilesRegister().add_paths(os.path.join(file_root, '**'))
+        fr = FilesRegister()
+        assert len(fr.add_paths(os.path.join(file_root, '**'))) == len(files_to_test)
         assert len(fri) == len(fr)
         assert file_name in fr
         files = fr[file_name]
-        assert len(files) == 2
+        assert len(files) == len(files_to_test)
         assert all(_.path in (wop, wip) for _ in files)
         assert all(_.stem == file_name for _ in files)
         assert all(_.ext == file_ext for _ in files)
