@@ -1,18 +1,30 @@
 """ test module for the ae.files namespace portion. """
-import glob
 import os
-import pathlib
 import pytest
 import shutil
+
 from io import TextIOWrapper
 
-from ae.files import file_transfer_progress, series_file_name, RegisteredFile, CachedFile, FilesRegister
+from ae.base import norm_line_sep
+from ae.files import (
+    copy_bytes, file_lines, file_transfer_progress, read_file_text, write_file_text, RegisteredFile, CachedFile)
 
 
 class TestHelpers:
+    def test_file_lines(self):
+        text = "line1\nline2\rline3\r\n"
+        fnm = "tests/tst_lines.txt"
+        try:
+            write_file_text(text, fnm)
+            assert file_lines(fnm) == tuple(norm_line_sep(text).split("\n"))
+        finally:
+            if os.path.exists(fnm):
+                os.remove(fnm)
+
     def test_file_transfer_progress_transferred(self):
         assert file_transfer_progress(0) == "0 Bytes"
         assert file_transfer_progress(1023) == "1023 Bytes"
+        assert file_transfer_progress(1023, decimal_places=1) == "1023 Bytes"
 
         assert file_transfer_progress(1024) == "1 KBytes"
         assert file_transfer_progress(1025) == "1.001 KBytes"
@@ -21,6 +33,8 @@ class TestHelpers:
         assert file_transfer_progress(1028) == "1.004 KBytes"
         assert file_transfer_progress(1029) == "1.005 KBytes"
         assert file_transfer_progress(1030) == "1.006 KBytes"
+        assert file_transfer_progress(1030, decimal_places=0) == "1 KBytes"
+        assert file_transfer_progress(1030, decimal_places=1) == "1.0 KBytes"
 
         assert file_transfer_progress(1023 * 1024) == "1023 KBytes"
         assert file_transfer_progress(1024 * 1024 - 1) == "1023.999 KBytes"
@@ -28,11 +42,14 @@ class TestHelpers:
         assert file_transfer_progress(1024 * 1024 * 1024 - 1) == "1024.000 MBytes"
         assert file_transfer_progress(1024 * 1024 * 1024) == "1 GBytes"
         assert file_transfer_progress(1024 * 1024 * 1024 * 1024 - 1) == "1024.000 GBytes"
+        assert file_transfer_progress(1024 * 1024 * 1024 * 1024 - 1, decimal_places=1) == "1024.0 GBytes"
         assert file_transfer_progress(1024 * 1024 * 1024 * 1024) == "1 TBytes"
 
         assert file_transfer_progress(1024 * 1024 * 1024 * 1024 + 1) == "1.000 TBytes"
         assert file_transfer_progress(1024 * 1024 * 1024 * 1024 + 1025 * 1024) == "1.000 TBytes"
         assert file_transfer_progress(1024 * 1024 * 1024 * 1024 + 1024 * 1024 * 1024) == "1.001 TBytes"
+        assert file_transfer_progress(1024 * 1024 * 1024 * 1024 + 1024 * 1024 * 1024, decimal_places=0) == "1 TBytes"
+        assert file_transfer_progress(1024 * 1024 * 1024 * 1024 + 1024 * 1024 * 1024, decimal_places=1) == "1.0 TBytes"
 
     def test_file_transfer_progress_with_total(self):
         assert file_transfer_progress(0, 1) == "0 / 1 Bytes"
@@ -46,30 +63,36 @@ class TestHelpers:
         assert file_transfer_progress(1024 * 1024 * 1024, 1024 * 1024 * 1024) == "1 GBytes"
         assert file_transfer_progress(1024 * 1024 * 1024 * 1024, 1024 * 1024 * 1024 * 1024) == "1 TBytes"
 
-    def test_series_file_name_basics(self):
-        assert series_file_name("tests/series_tests.tst") == "tests/series_tests 01.tst"
-        assert series_file_name("tests/series_tests.tst", marker='_copy_') == "tests/series_tests_copy_01.tst"
-        assert series_file_name("tests/series_tests.tst", digits=1) == "tests/series_tests 1.tst"
-
-    def test_series_file_name_create(self):
-        file_mask = "tests/series_tests*.tst"
+    def test_read_file_text(self):
+        text = "line1\nline2\rline3\r\n"
+        fnm = "tests/tst_content.txt"
         try:
-            assert series_file_name("tests/series_tests.tst", create=True) == "tests/series_tests 01.tst"
-            assert series_file_name("tests/series_tests.tst", create=True) == "tests/series_tests 02.tst"
-        finally:
-            for file in glob.glob(file_mask):
-                os.remove(file)
+            write_file_text(text, fnm)
+            assert read_file_text(fnm) == norm_line_sep(text)
 
-    def test_series_file_name_conflict(self):
-        file_mask = "tests/series_tests*.tst"
-        try:
-            open(file_mask.replace('*', ' aaa'), 'w').close()
-            open(file_mask.replace('*', ' 04'), 'w').close()
-            assert series_file_name("tests/series_tests.tst", create=True) == "tests/series_tests 03.tst"
-            assert series_file_name("tests/series_tests.tst") == "tests/series_tests 05.tst"
+            write_file_text(norm_line_sep(text), fnm)
+            assert read_file_text(fnm) == norm_line_sep(text)
         finally:
-            for file in glob.glob(file_mask):
-                os.remove(file)
+            if os.path.exists(fnm):
+                os.remove(fnm)
+
+    def test_read_file_text_error(self):
+        assert read_file_text("tests/not_existing file.xxx") == ""
+        assert read_file_text(":invalid \\=// file name....") == ""
+
+    def test_write_file_text(self):
+        text = "line1\nline2\rline3\r\n"
+        fnm = "tests/tst_write.txt"
+        try:
+            assert write_file_text(text, fnm)
+            assert read_file_text(fnm) == norm_line_sep(text)
+        finally:
+            if os.path.exists(fnm):
+                os.remove(fnm)
+
+    def test_write_file_text_error(self):
+        assert not write_file_text("what ever", "folder_not_existing/writefile.xxx")
+        assert not write_file_text("what else", ":invalid \\=// file name....")
 
 
 file_root = 'TstRootFolder'
@@ -113,14 +136,98 @@ def file_loader_mock_func(file):
     return file
 
 
-def property_matcher_mock(file):
-    """ file property matcher mock. """
-    return file.properties == file_properties
+class TestCopyBytes:
+    """ ae.files.copy_bytes unit tests. """
+    def test_named_basics(self, files_to_test):
+        f1, f2 = files_to_test
 
+        errors = list()
+        assert not copy_bytes(f1, f2, errors=errors)
+        assert errors
 
-def file_sorter_mock(file):
-    """ file sorter mock. """
-    return file.properties.get('int', 0)
+        errors = list()
+        assert copy_bytes(f1, f2, overwrite=True, errors=errors) == f2
+        assert not errors
+
+        assert copy_bytes(f2, f1, overwrite=True) == f1
+
+    def test_arg_errors(self, files_to_test):
+        f1, f2 = files_to_test
+        file_obj1 = open(f1, "rb")
+
+        errors = list()
+        assert not copy_bytes("x", "y", errors=errors, progress_kwarg1="z")
+        assert errors
+
+        errors = list()
+        assert not copy_bytes(file_obj1, "y", errors=errors)
+        assert errors
+
+        errors = list()
+        assert not copy_bytes(file_obj1, "y", move_file=True, errors=errors)
+        assert errors
+
+        errors = list()
+        assert not copy_bytes("x", file_obj1, overwrite=True, errors=errors)
+        assert errors
+
+        errors = list()
+        assert not copy_bytes("x", file_obj1, recoverable=True, errors=errors)
+        assert errors
+
+        file_obj1.close()
+
+    def test_recoverable(self, files_to_test):
+        f1, f2 = files_to_test
+
+        assert copy_bytes(f1, f2, overwrite=True, recoverable=True)
+        assert read_file_text(f2) == read_file_text(f1)
+
+        half_len = int(len(file_content) / 2)
+        with open(f2, "wb") as fp:
+            fp.write(bytes(file_content[:half_len], 'utf8'))
+
+        assert copy_bytes(f1, f2, overwrite=True, recoverable=True)
+        assert read_file_text(f2) == read_file_text(f1)
+
+    def test_move_file(self, files_to_test):
+        f1, f2 = files_to_test
+        os.remove(f2)
+
+        assert not os.path.exists(f2)
+        assert copy_bytes(f1, f2, move_file=True)
+        assert not os.path.exists(f1)
+        assert os.path.exists(f2)
+
+    def test_progress_func(self, files_to_test):
+        f1, f2 = files_to_test
+        progress_called = False
+        progress_kwargs = dict()
+        progress_return = False
+        
+        def pro_fnc(**kwargs):
+            """ progress callback function """
+            nonlocal progress_kwargs, progress_called, progress_return
+            progress_kwargs = kwargs
+            progress_called = True
+            return progress_return
+            
+        pro_kwarg1 = 'tst_arg'
+        
+        errors = list()
+        assert copy_bytes(f1, f2, overwrite=True, errors=errors, progress_func=pro_fnc, pro_kwarg1=pro_kwarg1)
+        assert not errors
+        assert progress_called
+        assert 'pro_kwarg1' in progress_kwargs
+        assert progress_kwargs['pro_kwarg1'] == pro_kwarg1
+        
+        progress_called = False
+        progress_return = True
+        assert not copy_bytes(f1, f2, overwrite=True, errors=errors, progress_func=pro_fnc, pro_kwarg1=pro_kwarg1)
+        assert errors
+        assert progress_called
+        assert 'pro_kwarg1' in progress_kwargs
+        assert progress_kwargs['pro_kwarg1'] == pro_kwarg1
 
 
 class TestRegisteredFile:
@@ -226,195 +333,3 @@ class TestCachedFile:
         cf = CachedFile('tests/conftest.py', object_loader=load_file_content)
         assert isinstance(cf.loaded_object, list)
         assert cf.loaded_object == load_file_content(cf)
-
-
-class TestFilesRegister:
-    """ test FilesRegister class. """
-    def test_add_file(self):
-        fr = FilesRegister()
-        fr.add_file("test.xx")
-        fr.add_file("test.yy")
-        fr.add_file("test.yy")
-
-        fr.add_file("test3")
-        fr.add_file("test3.a")
-        fr.add_file("test3.b")
-
-        assert len(fr) == 2
-        assert 'test' in fr
-        assert 'test3' in fr
-        assert fr.find_file('test')
-        assert fr.find_file('test3')
-
-        assert len(fr['test']) == 3
-        assert fr['test'] == ['test.xx', 'test.yy', 'test.yy']
-
-        assert len(fr['test3']) == 3
-        assert fr['test3'] == ['test3', 'test3.a', 'test3.b']
-
-        assert fr.find_file('test6') is None
-
-    def test_add_file_reversed(self):
-        fr = FilesRegister()
-        fr.add_file("test.xx", first_index=-1)
-        fr.add_file("test.yy", first_index=-2)
-        fr.add_file("test.zz", first_index=-3)
-        assert fr['test'] == ['test.zz', 'test.yy', 'test.xx']
-
-    def test_add_files(self):
-        fr = FilesRegister()
-        files1 = ['tst.a', 'tst.b', 'tst.c']
-        fr.add_files(files1)
-        assert fr['tst'] == files1
-
-        files2 = ['tst.1', 'tst.z', 'tst']
-        fr.add_files(tuple(files2), first_index=0)
-        assert fr['tst'] == files2 + files1
-
-    def test_add_files_reversed(self):
-        fr = FilesRegister()
-        files1 = ['tst.a', 'tst.b', 'tst.c']
-        fr.add_files(files1, first_index=-1)
-        assert fr['tst'] == list(reversed(files1))
-
-        files2 = ['tst.1', 'tst.z', 'tst']
-        fr.add_files(tuple(files2), first_index=-4)
-        assert fr['tst'] == list(reversed(files1 + files2))
-
-    def test_add_register(self):
-        fr = FilesRegister()
-        fr.add_file("test.xx")
-        fr.add_file("test.yy")
-        fr.add_file("test3")
-
-        fr2 = FilesRegister()
-        fr2.add_file("dir/test.zz")
-        fr2.add_file("dir3/test6")
-
-        fr.add_register(fr2)
-        assert len(fr) == 3
-        assert len(fr['test']) == 3
-        assert fr.find_file('test')
-        assert fr.find_file('test3')
-        assert fr.find_file('test6')
-
-    def test_add_path_init(self, files_to_test):
-        wop, wip = files_to_test
-        fr = FilesRegister(os.path.join(file_root, '**'))
-        assert len(fr) == 1
-        assert file_name in fr
-        files = fr[file_name]
-        assert len(files) == 2
-        assert all(_.path in (wop, wip) for _ in files)
-        assert all(_.stem == file_name for _ in files)
-        assert all(_.ext == file_ext for _ in files)
-        assert all(_.properties in (dict(), file_properties) for _ in files)
-
-    def test_add_path_redirect(self, files_to_test):
-        wop, wip = files_to_test
-        fri = FilesRegister(os.path.join(file_root, '**'))
-        fr = FilesRegister()
-        assert len(fr.add_paths(os.path.join(file_root, '**'))) == len(files_to_test)
-        assert len(fri) == len(fr)
-        assert file_name in fr
-        files = fr[file_name]
-        assert len(files) == len(files_to_test)
-        assert all(_.path in (wop, wip) for _ in files)
-        assert all(_.stem == file_name for _ in files)
-        assert all(_.ext == file_ext for _ in files)
-        assert all(_.properties in (dict(), file_properties) for _ in files)
-
-        old_len = len(fr)
-        assert 'test_files' not in fr
-        fr.add_file('tests/test_files.py')
-        assert old_len < len(fr)
-        assert 'test_files' in fr
-
-    def test_cache_file_class(self, files_to_test):
-        wop, wip = files_to_test
-        fr = FilesRegister(os.path.join(file_root, '**'), file_class=CachedFile, object_loader=file_loader_mock_func)
-        assert len(fr) == 1
-        assert file_name in fr
-        files = fr[file_name]
-        assert len(files) == 2
-        assert all(_.path in (wop, wip) for _ in files)
-        assert all(_.stem == file_name for _ in files)
-        assert all(_.ext == file_ext for _ in files)
-        assert all(_.properties in (dict(), file_properties) for _ in files)
-
-        assert all(isinstance(_, CachedFile) for _ in files)
-
-    def test_call_find_file_redirect(self, files_to_test):
-        fr = FilesRegister(file_root)
-        assert fr(file_name, properties=file_properties) == fr.find_file(file_name, properties=file_properties)
-
-    def test_find_file_by_name(self, files_to_test):
-        fr = FilesRegister(os.path.join(file_root, '**'))
-        assert fr.find_file(file_name).stem == file_name
-
-    def test_find_file_by_properties(self, files_to_test):
-        fr = FilesRegister(os.path.join(file_root, '**'))
-        ff = fr.find_file(file_name, properties=file_properties)
-        assert ff
-        assert ff.stem == file_name
-        assert ff.properties == file_properties
-
-    def test_find_file_by_property_matcher(self, files_to_test):
-        fr = FilesRegister(os.path.join(file_root, '**'))
-        ff = fr.find_file(file_name, property_matcher=property_matcher_mock)
-        assert ff
-        assert ff.stem == file_name
-        assert ff.properties == file_properties
-
-    def test_find_file_by_property_matcher_and_file_sorter(self, files_to_test):
-        fr = FilesRegister(os.path.join(file_root, '**'))
-        ff = fr.find_file(file_name, properties=file_properties, file_sorter=file_sorter_mock)
-        assert ff
-        assert ff.stem == file_name
-        assert ff.properties == file_properties
-
-    def test_find_file_by_file_sorter(self, files_to_test):
-        fr = FilesRegister(os.path.join(file_root, '**'))
-        ff = fr.find_file(file_name, file_sorter=file_sorter_mock)
-        assert ff
-        assert ff.stem == file_name
-        assert ff.properties == dict()      # finds the one without properties because int-default==0
-
-    def test_find_file_with_default_property_matcher(self):
-        fr = FilesRegister(property_matcher=property_matcher_mock)
-        assert fr.property_watcher is property_matcher_mock
-
-    def test_find_file_with_default_file_sorter(self):
-        fr = FilesRegister(file_sorter=file_sorter_mock)
-        assert fr.file_sorter is file_sorter_mock
-
-    def test_init_min(self):
-        fr = FilesRegister()
-        assert not fr.property_watcher
-        assert not fr.file_sorter
-        assert not fr.keys()
-        assert not fr.values()
-
-    def test_init_property_matcher(self):
-        fr = FilesRegister(property_matcher=property_matcher_mock)
-        assert fr.property_watcher is property_matcher_mock
-
-    def test_init_file_sorter(self):
-        fr = FilesRegister(file_sorter=file_sorter_mock)
-        assert fr.file_sorter is file_sorter_mock
-
-    def test_reclassify(self):
-        fr = FilesRegister()
-        fr.add_file('ttt')
-        fr.add_file('dir/ttt')
-        assert len(fr['ttt']) == 2
-
-        assert all(isinstance(file, str) for file in fr['ttt'])
-        fr.reclassify()
-        assert all(isinstance(file, CachedFile) for file in fr['ttt'])
-        fr.reclassify(file_class=RegisteredFile)
-        assert all(isinstance(file, RegisteredFile) for file in fr['ttt'])
-        fr.reclassify(file_class=pathlib.Path)
-        assert all(isinstance(file, pathlib.Path) for file in fr['ttt'])
-        fr.reclassify(file_class=pathlib.PurePath)
-        assert all(isinstance(file, pathlib.PurePath) for file in fr['ttt'])
