@@ -80,7 +80,7 @@ from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, 
 from ae.base import norm_line_sep                                                   # type: ignore
 
 
-__version__ = '0.1.12'
+__version__ = '0.1.13'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -100,14 +100,15 @@ _default_progress_callback = lambda **_: None       # noqa: E731
 
 
 def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
-               src_size: int = -1, buf_size: int = COPY_BUF_LEN, overwrite: bool = False, move_file: bool = False,
-               recoverable: bool = False, errors: Optional[List[str]] = None,
+               src_size: int = -1, offset: int = 0, buf_size: int = COPY_BUF_LEN, overwrite: bool = False,
+               move_file: bool = False, recoverable: bool = False, errors: Optional[List[str]] = None,
                progress_func: Callable = _default_progress_callback, **progress_kwargs) -> str:
     """ recoverable copy of a file or stream (file-like object), optionally with progress callbacks.
 
     :param src_file:            source file name or opened stream (file-like) object.
     :param dst_file:            destination file name or opened stream (file-like) object.
     :param src_size:            source file size in bytes (needed if :paramref:`~copy_bytes.src_file' is a stream).
+    :param offset:              file offset at which the copy process starts (needed only for not seekable src stream).
     :param buf_size:            size of copy buffer/chunk in bytes (copied on each progress callback).
     :param overwrite:           pass True to allow overwrite of destination file.
     :param move_file:           pass True to delete source file on complete copying.
@@ -143,25 +144,32 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
         errors.append("destination file-stream cannot be overwritten or recovered")
     if dst_named and not overwrite and os.path.exists(dst_file):    # type: ignore # mypy does not recognize src_named
         errors.append("destination file exists already (pass True to the overwrite parameter for to overwrite)")
-
     if errors:
         return ""
 
+    src_fp: BinaryIO = cast(BinaryIO, None)
     try:
-        src_fp: BinaryIO = open(cast(str, src_file), "rb") if src_named else cast(BinaryIO, src_file)
+        src_fp = open(cast(str, src_file), "rb") if src_named else cast(BinaryIO, src_file)
+        dst_fp = open(cast(str, dst_file), "ab+") if dst_named else cast(BinaryIO, dst_file)
+    except (OSError, Exception) as ex:
+        errors.append(str(ex))
+        if src_named and src_fp:
+            src_fp.close()
+        return ""
+
+    try:
         if determine_src_size:
             src_size = os.fstat(src_fp.fileno()).st_size        # ALT: src_fp.seek(0, 2) and src_fp.tell()
-        dst_fp: BinaryIO = open(cast(str, dst_file), "ab+") if dst_named else cast(BinaryIO, dst_file)
         if recoverable:
             transferred = os.fstat(dst_fp.fileno()).st_size
             dst_fp.close()
-            src_fp.seek(transferred)
+            if transferred != offset:
+                src_fp.seek(transferred)
         else:
             transferred = 0
-
         while transferred < src_size:
             chunk = src_fp.read(buf_size)
-            if not chunk:                               # pragma: no cover
+            if not chunk:
                 errors.append("source chunk is empty before reaching the end of the file")
                 break
 
@@ -178,15 +186,16 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
                 errors.append(f"progress function request cancellation; reason={cancel_reason}")
                 break
 
-        if dst_named:
+    except (OSError, Exception) as ex:
+        errors.append(str(ex))
+
+    finally:
+        if dst_named and not dst_fp.closed:
             dst_fp.close()
         if src_named:
             src_fp.close()
             if move_file and not errors:
                 os.remove(src_file)         # type: ignore # silly mypy does not recognize src_named ensuring str
-
-    except (OSError, Exception) as ex:                  # pragma: no cover
-        errors.append(str(ex))
 
     return "" if errors else str(dst_file)
 

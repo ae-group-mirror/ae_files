@@ -138,19 +138,6 @@ def file_loader_mock_func(file):
 
 class TestCopyBytes:
     """ ae.files.copy_bytes unit tests. """
-    def test_named_basics(self, files_to_test):
-        f1, f2 = files_to_test
-
-        errors = list()
-        assert not copy_bytes(f1, f2, errors=errors)
-        assert errors
-
-        errors = list()
-        assert copy_bytes(f1, f2, overwrite=True, errors=errors) == f2
-        assert not errors
-
-        assert copy_bytes(f2, f1, overwrite=True) == f1
-
     def test_arg_errors(self, files_to_test):
         f1, f2 = files_to_test
         file_obj1 = open(f1, "rb")
@@ -175,21 +162,33 @@ class TestCopyBytes:
         assert not copy_bytes("x", file_obj1, recoverable=True, errors=errors)
         assert errors
 
+        errors = list()
+        assert not copy_bytes(f1, "in/:/valid", errors=errors)  # dst file creation error
+        assert errors
+
+        errors = list()
+        assert not copy_bytes(f1, file_obj1, errors=errors)     # exception because file_obj1 is opened for read-only
+        assert errors
+
+        file_obj1.seek(0, 2)
+        errors = list()
+        assert not copy_bytes(file_obj1, f2, src_size=999, overwrite=True, errors=errors)  # file_obj1=EOF ->empty chunk
+        assert errors
+
         file_obj1.close()
 
-    def test_recoverable(self, files_to_test):
+    def test_basics(self, files_to_test):
         f1, f2 = files_to_test
 
-        assert copy_bytes(f1, f2, overwrite=True, recoverable=True)
-        assert read_file_text(f2) == read_file_text(f1)
+        errors = list()
+        assert not copy_bytes(f1, f2, errors=errors)
+        assert errors
 
-        half_len = int(len(file_content) / 2)
-        with open(f2, "wb") as fp:
-            fp.write(bytes(file_content[:half_len], 'utf8'))
+        errors = list()
+        assert copy_bytes(f1, f2, overwrite=True, errors=errors) == f2
+        assert not errors
 
-        assert copy_bytes(f1, f2, overwrite=True, recoverable=True)
-        assert read_file_text(f2) == read_file_text(f1)
-
+        assert copy_bytes(f2, f1, overwrite=True) == f1
     def test_move_file(self, files_to_test):
         f1, f2 = files_to_test
         os.remove(f2)
@@ -228,6 +227,20 @@ class TestCopyBytes:
         assert progress_called
         assert 'pro_kwarg1' in progress_kwargs
         assert progress_kwargs['pro_kwarg1'] == pro_kwarg1
+
+    def test_recoverable(self, files_to_test):
+        f1, f2 = files_to_test
+
+        assert copy_bytes(f1, f2, overwrite=True, recoverable=True)
+        assert read_file_text(f2) == read_file_text(f1)
+
+        half_len = int(len(file_content) / 2)
+        with open(f2, "wb") as fp:
+            fp.write(bytes(file_content[:half_len], 'utf8'))
+
+        assert copy_bytes(f1, f2, overwrite=True, recoverable=True)
+        assert read_file_text(f2) == read_file_text(f1)
+
 
 
 class TestRegisteredFile:
