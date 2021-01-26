@@ -170,9 +170,9 @@ class TestCopyBytes:
         assert not copy_bytes(f1, file_obj1, errors=errors)     # exception because file_obj1 is opened for read-only
         assert errors
 
-        file_obj1.seek(0, 2)
+        file_obj1.seek(0, 2)    # put src_file (file_obj1) to EOF for to simulate empty chunk error
         errors = list()
-        assert not copy_bytes(file_obj1, f2, src_size=999, overwrite=True, errors=errors)  # file_obj1=EOF ->empty chunk
+        assert not copy_bytes(file_obj1, f2, total_bytes=999, overwrite=True, errors=errors)
         assert errors
 
         file_obj1.close()
@@ -189,6 +189,7 @@ class TestCopyBytes:
         assert not errors
 
         assert copy_bytes(f2, f1, overwrite=True) == f1
+
     def test_move_file(self, files_to_test):
         f1, f2 = files_to_test
         os.remove(f2)
@@ -240,7 +241,6 @@ class TestCopyBytes:
 
         assert copy_bytes(f1, f2, overwrite=True, recoverable=True)
         assert read_file_text(f2) == read_file_text(f1)
-
 
 
 class TestRegisteredFile:

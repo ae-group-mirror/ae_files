@@ -6,10 +6,18 @@ This namespace portion is pure Python providing helpers for file object and cont
 :mod:`ae.base` namespace portion. Helper functions for to manage directory/folder structures are provided by the
 :mod:`ae.paths` portion.
 
-The classes :class:`RegisteredFile` and :class:`CachedFile` provided by this portion, encapsulate and optionally cache
-files contents within special file objects. The instances of these two classes are compatible to the file object
-classes provided by the :mod:`pathlib` module. But also pure path strings can be used as file objects by the class
-:class:`FilesRegister` (see also the :data:`FileObject` type).
+The helper function :func:`copy_bytes` provides recoverable copies of binary files and file streams, with progress
+callbacks for each copied bytes chunk/buffer.
+
+:func:`file_lines` and :func:`read_file_text` are helpers for to read/load text file contents. The function
+:func:`write_file_text` stores a string to a text file.
+
+An instance of the classes :class:`RegisteredFile` and :class:`CachedFile`, encapsulate and optionally cache
+the contents of a files within a file object. These instances are compatible with the file objects provided by Python's
+:mod:`pathlib` module. But also pure path strings can be used as file objects (see also the :data:`FileObject` type).
+
+All these types of file objects are supported by the files register class :class:`~ae.paths.FilesRegister` from the
+:mod:`ae.paths` portion.
 
 
 registered file
@@ -28,25 +36,25 @@ A registered file object represents a single file on your file system and can be
     assert rf.ext == '.extension'
     assert rf.properties == dict()
 
-The :attr:`~RegisteredFile.properties` attribute of the :class:`RegisteredFile` instance is empty in the above example
-because the :attr:`~RegisteredFile.path` does not contain folder names with an underscore character.
+File properties will be automatically attached to each file object instance with the instance attribute
+:attr:`~RegisteredFile.properties`. In the last example it results in an empty dictionary because the
+:attr:`~RegisteredFile.path` of this file object does not contain folder names with an underscore character.
 
 
 file properties
 ^^^^^^^^^^^^^^^
 
-File properties are provided in the :attr:`~RegisteredFile.properties` attribute which is a dict instance, where the key
-is the name of the property. Each item of this attribute reflects a property of the registered file.
-
-Property names and values are automatically determined via the names of their specified sub-folders. Every sub-folder
-name containing an underscore character in the format <property-name>_<value> will be interpreted as a file property::
+File property names and values are automatically determined from the names of their sub-folders, specified in the
+:attr:`~RegisteredFile.path` attribute. Every sub-folder name containing an underscore character in the format
+<property-name>_<value> will be interpreted as a file property::
 
     rf = RegisteredFile('property1_69/property2_3.69/property3_whatever/file_name.ext')
     assert rf.properties['property1'] == 69
     assert rf.properties['property2'] == 3.69
     assert rf.properties['property3'] == 'whatever'
 
-Currently the property types `int`, `float` and `string` are recognized and converted into a property value.
+The property types `int`, `float` and `string` are recognized and converted into a property value. Boolean values
+can be coded as 1 and 0 integers.
 
 
 cached file
@@ -55,8 +63,7 @@ cached file
 A cached file created from the :class:`CachedFile` behaves like a :ref:`registered file` and additionally provides the
 possibility to cache parts or the whole file content as well as the file pointer of the opened file::
 
-    cf = CachedFile('integer_69/float_3.69/string_whatever/file_name.ext',
-                    object_loader=lambda cached_file: open(cached_file.path))
+    cf = CachedFile('integer_69/float_3.69/string_whatever/file_name.ext')
 
     assert str(cf) == 'integer_69/float_3.69/string_whatever/file_name.ext'
     assert cf.path == 'integer_69/float_3.69/string_whatever/file_name.ext'
@@ -65,6 +72,17 @@ possibility to cache parts or the whole file content as well as the file pointer
     assert cf.properties['integer'] == 69
     assert cf.properties['float'] == 3.69
     assert cf.properties['string'] == 'whatever'
+
+On instantiation of the :class:`CachedFile` file object the default file object loader function
+:func:`_default_object_loader` will be used, which opens a file stream via Python's `open` built-in. Alternatively
+you can specify a specific file object loader with the :paramref:`~CachedFile.object_loader` parameter or by assigning
+a callable directly to the :attr:`~CachedFile.object_loader` attribute::
+
+    cf = CachedFile('integer_69/float_3.69/string_whatever/file_name.ext',
+                    object_loader=lambda cached_file_obj: my_open_method(cached_file_obj.path))
+
+The cached file object is accessible via the :attr:`~CachedFile.loaded_object` attribute of the cached file object
+instance::
 
     assert isinstance(cf.loaded_object, TextIOWrapper)
     cf.loaded_object.seek(...)
@@ -80,7 +98,7 @@ from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, 
 from ae.base import norm_line_sep                                                   # type: ignore
 
 
-__version__ = '0.1.13'
+__version__ = '0.1.14'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -100,26 +118,35 @@ _default_progress_callback = lambda **_: None       # noqa: E731
 
 
 def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
-               src_size: int = -1, offset: int = 0, buf_size: int = COPY_BUF_LEN, overwrite: bool = False,
+               transferred_bytes: int = 0, total_bytes: int = 0, buf_size: int = COPY_BUF_LEN, overwrite: bool = False,
                move_file: bool = False, recoverable: bool = False, errors: Optional[List[str]] = None,
                progress_func: Callable = _default_progress_callback, **progress_kwargs) -> str:
     """ recoverable copy of a file or stream (file-like object), optionally with progress callbacks.
 
-    :param src_file:            source file name or opened stream (file-like) object.
-    :param dst_file:            destination file name or opened stream (file-like) object.
-    :param src_size:            source file size in bytes (needed if :paramref:`~copy_bytes.src_file' is a stream).
-    :param offset:              file offset at which the copy process starts (needed only for not seekable src stream).
-    :param buf_size:            size of copy buffer/chunk in bytes (copied on each progress callback).
-    :param overwrite:           pass True to allow overwrite of destination file.
-    :param move_file:           pass True to delete source file on complete copying.
-    :param recoverable:         pass True to allow recoverable file copy.
+    :param src_file:            source file name or opened stream (file-like) object. If passing a non-seekable stream
+                                together with a non-zero value in :paramref:`~copy_bytes.transferred_bytes` then the
+                                source stream has to be set to the correct position before you call this function.
+                                If passing any source stream then also the total file/stream size has to be passed
+                                into the :paramref:`~copy_bytes.total_bytes` parameter. Source file streams do also
+                                not support a True value in the :paramref:`move_file` argument.
+    :param dst_file:            destination file name or opened stream (file-like) object. Recoverable copies and copies
+                                with a True value in the :paramref:`~copy_bytes.overwrite` argument are not supported
+                                (always use a destination file name if you need a recoverable/overwriting copy).
+    :param transferred_bytes:   file offset at which the copy process starts. If not passed for recoverable copies, then
+                                `copy_bytes` will determine this value from the file length of the destination file.
+    :param total_bytes:         source file size in bytes (needed only if :paramref:`~copy_bytes.src_file' is a stream).
+    :param buf_size:            size of copy buffer/chunk in bytes (that get copied before each progress callback).
+    :param overwrite:           pass True to allow overwrite of destination file. If the destination file exists already
+                                then this function will return an error (when this argument get not passed or is False).
+    :param move_file:           pass True to delete source file on complete copying (only works if source is a stream).
+    :param recoverable:         pass True to allow recoverable file copy (only working if source is a stream).
     :param errors:              pass empty list for to get a list of detailed error messages.
     :param progress_func:       optional callback for to dispatch or break/cancel the copy progress for large files.
                                 If the callback returns a non-empty value it will be interpreted as cancel reason,
                                 the copy process will be stopped and a error will be returned.
     :param progress_kwargs:     optional additional kwargs passed to the progress function. The kwargs `total_bytes`
                                 and `transferred_bytes` will be updated before the callback.
-    :return:                    destination file name/stream or empty string on error.
+    :return:                    destination file name/stream as string or empty string on error.
 
     .. hint::
         This function is extending the compatible Python functions :func:`shutil.copyfileobj`, :func:`shutil.copyfile`,
@@ -129,19 +156,18 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
     """
     src_named = isinstance(src_file, str)
     dst_named = isinstance(dst_file, str)
-    determine_src_size = (src_size == -1)
     if not isinstance(errors, list):
         errors = list()
 
     if progress_func == _default_progress_callback and progress_kwargs:
         errors.append(f"no progress callback function passed but kwargs={progress_kwargs}")
     if not src_named:
-        if determine_src_size:
-            errors.append("src_size has to be specified for source file-stream")
+        if not total_bytes:
+            errors.append("total_bytes has to be specified for source file-stream")
         if move_file:
             errors.append("source file-stream cannot be moved")
     if not dst_named and (overwrite or recoverable):
-        errors.append("destination file-stream cannot be overwritten or recovered")
+        errors.append("destination file-stream cannot be overwritten or recovered (pass file name instead)")
     if dst_named and not overwrite and os.path.exists(dst_file):    # type: ignore # mypy does not recognize src_named
         errors.append("destination file exists already (pass True to the overwrite parameter for to overwrite)")
     if errors:
@@ -158,16 +184,15 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
         return ""
 
     try:
-        if determine_src_size:
-            src_size = os.fstat(src_fp.fileno()).st_size        # ALT: src_fp.seek(0, 2) and src_fp.tell()
+        if not total_bytes:
+            total_bytes = os.fstat(src_fp.fileno()).st_size        # ALT: src_fp.seek(0, 2) and src_fp.tell()
         if recoverable:
-            transferred = os.fstat(dst_fp.fileno()).st_size
+            if not transferred_bytes:
+                transferred_bytes = os.fstat(dst_fp.fileno()).st_size
+            if transferred_bytes and src_fp.seekable():
+                src_fp.seek(transferred_bytes)
             dst_fp.close()
-            if transferred != offset:
-                src_fp.seek(transferred)
-        else:
-            transferred = 0
-        while transferred < src_size:
+        while transferred_bytes < total_bytes:
             chunk = src_fp.read(buf_size)
             if not chunk:
                 errors.append("source chunk is empty before reaching the end of the file")
@@ -178,9 +203,9 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
                     dst_fp.write(chunk)
             else:
                 dst_fp.write(chunk)
-            transferred += len(chunk)
+            transferred_bytes += len(chunk)
 
-            progress_kwargs.update(transferred_bytes=transferred, total_bytes=src_size)
+            progress_kwargs.update(transferred_bytes=transferred_bytes, total_bytes=total_bytes)
             cancel_reason = progress_func(**progress_kwargs)
             if cancel_reason:
                 errors.append(f"progress function request cancellation; reason={cancel_reason}")
