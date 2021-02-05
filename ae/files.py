@@ -98,7 +98,7 @@ from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, 
 from ae.base import norm_line_sep                                                   # type: ignore
 
 
-__version__ = '0.1.14'
+__version__ = '0.1.15'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -134,7 +134,7 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
                                 (always use a destination file name if you need a recoverable/overwriting copy).
     :param transferred_bytes:   file offset at which the copy process starts. If not passed for recoverable copies, then
                                 `copy_bytes` will determine this value from the file length of the destination file.
-    :param total_bytes:         source file size in bytes (needed only if :paramref:`~copy_bytes.src_file' is a stream).
+    :param total_bytes:         source file size in bytes (needed only if :paramref:`~copy_bytes.src_file` is a stream).
     :param buf_size:            size of copy buffer/chunk in bytes (that get copied before each progress callback).
     :param overwrite:           pass True to allow overwrite of destination file. If the destination file exists already
                                 then this function will return an error (when this argument get not passed or is False).
@@ -150,9 +150,9 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
 
     .. hint::
         This function is extending the compatible Python functions :func:`shutil.copyfileobj`, :func:`shutil.copyfile`,
-        :func:`shutil.copy`, :func:`shutil.copy2` or :meth:`http.server.SimpleHTTPRequestHandler.copyfile`
-        with recoverability and a progress callback. It can also be used as :paramref:`~shutil.copytree.copy_function`
-        by :func:`shutil.copytree` and :func:`move`.
+        :func:`shutil.copy`, :func:`shutil.copy2` and :meth:`http.server.SimpleHTTPRequestHandler.copyfile`
+        with recoverability and a progress callback. It can also be used as argument for the
+        :paramref:`~shutil.copytree.copy_function` parameter of e.g. :func:`shutil.copytree` and :func:`shutil.move`.
     """
     src_named = isinstance(src_file, str)
     dst_named = isinstance(dst_file, str)
@@ -265,14 +265,14 @@ def read_file_text(file_path: str, encoding: Optional[str] = None, error_handlin
 
     :param file_path:           file path/name to load into a string.
     :param encoding:            encoding used to load and convert/interpret the file content.
-    :param error_handling:      pass `'strict'` or `None` to get `None` instead of empty string return value on
-                                either decoding ValueError exception or
-                                any `OSError`, `FileNotFoundError` or `PermissionError` exception.
+    :param error_handling:      pass `'strict'` or `None` to return `None` (instead of an empty string) for the cases
+                                where either a decoding `ValueError` exception or
+                                any `OSError`, `FileNotFoundError` or `PermissionError` exception got raised.
                                 The default value `'ignore'` will ignore any decoding errors (missing some characters)
                                 and will return an empty string on any file/os exception.
     :return:                    file content string. If the file could not be decoded, found or opened,
                                 then return empty string or None (None only if `'strict'` got passed to the
-                                :paramref:'~file_content.error_handling` parameter).
+                                :paramref:'~read_file_text.error_handling` parameter).
     """
     try:
         with open(file_path, encoding=encoding, errors=error_handling) as file_handle:
