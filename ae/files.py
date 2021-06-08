@@ -2,28 +2,33 @@
 generic file object helpers
 ===========================
 
-This namespace portion is pure Python providing helpers for file object and content managing. It only depends on the
-:mod:`ae.base` namespace portion. Helper functions for to manage directory/folder structures are provided by the
-:mod:`ae.paths` portion.
+this namespace portion is pure Python providing helpers for file object and content managing. it only depends on the
+:mod:`ae.base` namespace portion.
 
-The helper function :func:`copy_bytes` provides recoverable copies of binary files and file streams, with progress
+.. hint:: more helper functions for to manage directory/folder structures are provided by the :mod:`ae.paths` portion.
+
+the helper function :func:`copy_bytes` provides recoverable copies of binary files and file streams, with progress
 callbacks for each copied bytes chunk/buffer.
 
-:func:`file_lines` and :func:`read_file_text` are helpers for to read/load text file contents. The function
-:func:`write_file_text` stores a string to a text file.
+:func:`file_lines` and :func:`read_file_text` are helpers for to read/load text file contents.
 
-An instance of the classes :class:`RegisteredFile` and :class:`CachedFile`, encapsulate and optionally cache
-the contents of a files within a file object. These instances are compatible with the file objects provided by Python's
-:mod:`pathlib` module. But also pure path strings can be used as file objects (see also the :data:`FileObject` type).
+the function :func:`write_file_text` stores a string to a text file.
 
-All these types of file objects are supported by the files register class :class:`~ae.paths.FilesRegister` from the
+the helper function :func:`file_transfer_progress` puts the amount of transferred bytes in a short and user readable
+format, to be displayed as progress string in a file transfer progress.
+
+:class:`RegisteredFile` and :class:`CachedFile` encapsulate and optionally cache the contents of a file within a file
+object. instances of these classes are compatible with the file objects provided by Python's :mod:`pathlib` module. but
+also pure path strings can be used as file objects (see also the :data:`FileObject` type).
+
+all these types of file objects are supported by the files register class :class:`~ae.paths.FilesRegister` from the
 :mod:`ae.paths` portion.
 
 
 registered file
 ---------------
 
-A registered file object represents a single file on your file system and can be instantiated from one of the classes
+a registered file object represents a single file on your file system and can be instantiated from one of the classes
 :class:`RegisteredFile` or :class:`CachedFile` provided by this module/portion::
 
     from ae.files import RegisteredFile
@@ -36,16 +41,16 @@ A registered file object represents a single file on your file system and can be
     assert rf.ext == '.extension'
     assert rf.properties == dict()
 
-File properties will be automatically attached to each file object instance with the instance attribute
-:attr:`~RegisteredFile.properties`. In the last example it results in an empty dictionary because the
+file properties will be automatically attached to each file object instance with the instance attribute
+:attr:`~RegisteredFile.properties`. in the last example it results in an empty dictionary because the
 :attr:`~RegisteredFile.path` of this file object does not contain folder names with an underscore character.
 
 
 file properties
 ^^^^^^^^^^^^^^^
 
-File property names and values are automatically determined from the names of their sub-folders, specified in the
-:attr:`~RegisteredFile.path` attribute. Every sub-folder name containing an underscore character in the format
+file property names and values are automatically determined from the names of their sub-folders, specified in the
+:attr:`~RegisteredFile.path` attribute. every sub-folder name containing an underscore character in the format
 <property-name>_<value> will be interpreted as a file property::
 
     rf = RegisteredFile('property1_69/property2_3.69/property3_whatever/file_name.ext')
@@ -53,14 +58,14 @@ File property names and values are automatically determined from the names of th
     assert rf.properties['property2'] == 3.69
     assert rf.properties['property3'] == 'whatever'
 
-The property types `int`, `float` and `string` are recognized and converted into a property value. Boolean values
-can be coded as 1 and 0 integers.
+the property types `int`, `float` and `string` are recognized and converted into a property value. boolean values can be
+specified as ``1`` and ``0`` integers.
 
 
 cached file
 -----------
 
-A cached file created from the :class:`CachedFile` behaves like a :ref:`registered file` and additionally provides the
+a cached file created from the :class:`CachedFile` behaves like a :ref:`registered file` and additionally provides the
 possibility to cache parts or the whole file content as well as the file pointer of the opened file::
 
     cf = CachedFile('integer_69/float_3.69/string_whatever/file_name.ext')
@@ -73,15 +78,15 @@ possibility to cache parts or the whole file content as well as the file pointer
     assert cf.properties['float'] == 3.69
     assert cf.properties['string'] == 'whatever'
 
-On instantiation of the :class:`CachedFile` file object the default file object loader function
-:func:`_default_object_loader` will be used, which opens a file stream via Python's `open` built-in. Alternatively
+pn instantiation of the :class:`CachedFile` file object the default file object loader function
+:func:`_default_object_loader` will be used, which opens a file stream via Python's `open` built-in. alternatively
 you can specify a specific file object loader with the :paramref:`~CachedFile.object_loader` parameter or by assigning
 a callable directly to the :attr:`~CachedFile.object_loader` attribute::
 
     cf = CachedFile('integer_69/float_3.69/string_whatever/file_name.ext',
                     object_loader=lambda cached_file_obj: my_open_method(cached_file_obj.path))
 
-The cached file object is accessible via the :attr:`~CachedFile.loaded_object` attribute of the cached file object
+the cached file object is accessible via the :attr:`~CachedFile.loaded_object` attribute of the cached file object
 instance::
 
     assert isinstance(cf.loaded_object, TextIOWrapper)
@@ -98,7 +103,7 @@ from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, 
 from ae.base import norm_line_sep                                                   # type: ignore
 
 
-__version__ = '0.1.15'
+__version__ = '0.1.16'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -123,16 +128,16 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
                progress_func: Callable = _default_progress_callback, **progress_kwargs) -> str:
     """ recoverable copy of a file or stream (file-like object), optionally with progress callbacks.
 
-    :param src_file:            source file name or opened stream (file-like) object. If passing a non-seekable stream
+    :param src_file:            source file name or opened stream (file-like) object. if passing a non-seekable stream
                                 together with a non-zero value in :paramref:`~copy_bytes.transferred_bytes` then the
                                 source stream has to be set to the correct position before you call this function.
-                                If passing any source stream then also the total file/stream size has to be passed
-                                into the :paramref:`~copy_bytes.total_bytes` parameter. Source file streams do also
-                                not support a True value in the :paramref:`move_file` argument.
-    :param dst_file:            destination file name or opened stream (file-like) object. Recoverable copies and copies
-                                with a True value in the :paramref:`~copy_bytes.overwrite` argument are not supported
-                                (always use a destination file name if you need a recoverable/overwriting copy).
-    :param transferred_bytes:   file offset at which the copy process starts. If not passed for recoverable copies, then
+                                if passing any source stream then also the total file/stream size has to be passed
+                                into the :paramref:`~copy_bytes.total_bytes` parameter. source file streams does also
+                                not support a True value in the :paramref:`~copy_bytes.move_file` argument.
+    :param dst_file:            destination file name or opened stream (file-like) object. recoverable copies and copies
+                                with a True value in the :paramref:`~copy_bytes.overwrite` argument are not allowed;
+                                always use a destination file name if you need a recoverable/overwriting copy.
+    :param transferred_bytes:   file offset at which the copy process starts. if not passed for recoverable copies, then
                                 `copy_bytes` will determine this value from the file length of the destination file.
     :param total_bytes:         source file size in bytes (needed only if :paramref:`~copy_bytes.src_file` is a stream).
     :param buf_size:            size of copy buffer/chunk in bytes (that get copied before each progress callback).
@@ -142,16 +147,16 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
     :param recoverable:         pass True to allow recoverable file copy (only working if source is a stream).
     :param errors:              pass empty list for to get a list of detailed error messages.
     :param progress_func:       optional callback for to dispatch or break/cancel the copy progress for large files.
-                                If the callback returns a non-empty value it will be interpreted as cancel reason,
+                                if the callback returns a non-empty value it will be interpreted as cancel reason,
                                 the copy process will be stopped and a error will be returned.
-    :param progress_kwargs:     optional additional kwargs passed to the progress function. The kwargs `total_bytes`
+    :param progress_kwargs:     optional additional kwargs passed to the progress function. the kwargs `total_bytes`
                                 and `transferred_bytes` will be updated before the callback.
     :return:                    destination file name/stream as string or empty string on error.
 
     .. hint::
-        This function is extending the compatible Python functions :func:`shutil.copyfileobj`, :func:`shutil.copyfile`,
+        this function is extending the compatible Python functions :func:`shutil.copyfileobj`, :func:`shutil.copyfile`,
         :func:`shutil.copy`, :func:`shutil.copy2` and :meth:`http.server.SimpleHTTPRequestHandler.copyfile`
-        with recoverability and a progress callback. It can also be used as argument for the
+        with recoverability and a progress callback. it can also be used as argument for the
         :paramref:`~shutil.copytree.copy_function` parameter of e.g. :func:`shutil.copytree` and :func:`shutil.move`.
     """
     src_named = isinstance(src_file, str)
@@ -268,7 +273,7 @@ def read_file_text(file_path: str, encoding: Optional[str] = None, error_handlin
     :param error_handling:      pass `'strict'` or `None` to return `None` (instead of an empty string) for the cases
                                 where either a decoding `ValueError` exception or
                                 any `OSError`, `FileNotFoundError` or `PermissionError` exception got raised.
-                                The default value `'ignore'` will ignore any decoding errors (missing some characters)
+                                the default value `'ignore'` will ignore any decoding errors (missing some characters)
                                 and will return an empty string on any file/os exception.
     :return:                    file content string. If the file could not be decoded, found or opened,
                                 then return empty string or None (None only if `'strict'` got passed to the
