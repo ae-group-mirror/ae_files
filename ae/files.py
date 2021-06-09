@@ -5,12 +5,12 @@ generic file object helpers
 this namespace portion is pure Python providing helpers for file object and content managing. it only depends on the
 :mod:`ae.base` namespace portion.
 
-.. hint:: more helper functions for to manage directory/folder structures are provided by the :mod:`ae.paths` portion.
+.. hint:: more helper functions to manage directory/folder structures are provided by the :mod:`ae.paths` portion.
 
 the helper function :func:`copy_bytes` provides recoverable copies of binary files and file streams, with progress
 callbacks for each copied bytes chunk/buffer.
 
-:func:`file_lines` and :func:`read_file_text` are helpers for to read/load text file contents.
+:func:`file_lines` and :func:`read_file_text` are helpers to read/load text file contents.
 
 the function :func:`write_file_text` stores a string to a text file.
 
@@ -103,7 +103,7 @@ from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, 
 from ae.base import norm_line_sep                                                   # type: ignore
 
 
-__version__ = '0.1.16'
+__version__ = '0.1.17'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -141,12 +141,12 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
                                 `copy_bytes` will determine this value from the file length of the destination file.
     :param total_bytes:         source file size in bytes (needed only if :paramref:`~copy_bytes.src_file` is a stream).
     :param buf_size:            size of copy buffer/chunk in bytes (that get copied before each progress callback).
-    :param overwrite:           pass True to allow overwrite of destination file. If the destination file exists already
+    :param overwrite:           pass True to allow overwrite of destination file. if the destination file exists already
                                 then this function will return an error (when this argument get not passed or is False).
     :param move_file:           pass True to delete source file on complete copying (only works if source is a stream).
     :param recoverable:         pass True to allow recoverable file copy (only working if source is a stream).
-    :param errors:              pass empty list for to get a list of detailed error messages.
-    :param progress_func:       optional callback for to dispatch or break/cancel the copy progress for large files.
+    :param errors:              pass empty list to get a list of detailed error messages.
+    :param progress_func:       optional callback to dispatch or break/cancel the copy progress for large files.
                                 if the callback returns a non-empty value it will be interpreted as cancel reason,
                                 the copy process will be stopped and a error will be returned.
     :param progress_kwargs:     optional additional kwargs passed to the progress function. the kwargs `total_bytes`
@@ -174,7 +174,7 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
     if not dst_named and (overwrite or recoverable):
         errors.append("destination file-stream cannot be overwritten or recovered (pass file name instead)")
     if dst_named and not overwrite and os.path.exists(dst_file):    # type: ignore # mypy does not recognize src_named
-        errors.append("destination file exists already (pass True to the overwrite parameter for to overwrite)")
+        errors.append("destination file exists already (pass True to the overwrite parameter to overwrite)")
     if errors:
         return ""
 
@@ -275,7 +275,7 @@ def read_file_text(file_path: str, encoding: Optional[str] = None, error_handlin
                                 any `OSError`, `FileNotFoundError` or `PermissionError` exception got raised.
                                 the default value `'ignore'` will ignore any decoding errors (missing some characters)
                                 and will return an empty string on any file/os exception.
-    :return:                    file content string. If the file could not be decoded, found or opened,
+    :return:                    file content string. if the file could not be decoded, found or opened,
                                 then return empty string or None (None only if `'strict'` got passed to the
                                 :paramref:'~read_file_text.error_handling` parameter).
     """
@@ -311,7 +311,7 @@ class RegisteredFile:
         """ initialize registered file_obj instance.
 
         :param file_path:       file path string.
-        :param kwargs:          not supported, only there to have compatibility to :class:`CachedFile` for to detect
+        :param kwargs:          not supported, only there to have compatibility to :class:`CachedFile` to detect
                                 invalid kwargs.
         """
         assert not kwargs, "RegisteredFile does not have any kwargs - maybe want to use CachedFile as file_class."
@@ -383,7 +383,7 @@ class CachedFile(RegisteredFile):
         :param file_path:       path string of the file.
         :param object_loader:   callable converting the file_obj into a cached object (available
                                 via :attr:`~CachedFile.loaded_object`).
-        :param late_loading:    pass False for to convert/load file_obj cache early, directly at instantiation.
+        :param late_loading:    pass False to convert/load file_obj cache early, directly at instantiation.
         """
         super().__init__(file_path)
         self.object_loader = object_loader
