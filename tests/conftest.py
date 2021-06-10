@@ -8,6 +8,10 @@ import glob
 import pytest
 
 
+SKIP_EXPRESSION = "'CI_PROJECT_ID' in os.environ"
+skip_gitlab_ci = pytest.mark.skipif(SKIP_EXPRESSION, reason="headless gitlab CI python 3.6 image lacks window system")
+
+
 @pytest.fixture
 def tst_app_key():
     """ provide value used in tests for AppBase.app_key. """

@@ -103,7 +103,7 @@ from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, 
 from ae.base import norm_line_sep                                                   # type: ignore
 
 
-__version__ = '0.1.17'
+__version__ = '0.2.17'
 
 
 COPY_BUF_LEN = 16 * 1024
