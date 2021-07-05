@@ -170,7 +170,7 @@ class TestCopyBytes:
         assert not copy_bytes(f1, file_obj1, errors=errors)     # exception because file_obj1 is opened for read-only
         assert errors
 
-        file_obj1.seek(0, 2)    # put src_file (file_obj1) to EOF for to simulate empty chunk error
+        file_obj1.seek(0, 2)    # put src_file (file_obj1) to EOF to simulate empty chunk error
         errors = list()
         assert not copy_bytes(file_obj1, f2, total_bytes=999, overwrite=True, errors=errors)
         assert errors
