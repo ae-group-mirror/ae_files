@@ -61,7 +61,7 @@ deploy_staging:
   script:
     - twine upload --verbose dist/*
   only:
-    - master
+    - develop
 
 
 pages:
@@ -84,4 +84,4 @@ pages:
     paths:
       - public
   only:
-    - master
+    - develop
