@@ -5,7 +5,7 @@ import shutil
 
 from io import TextIOWrapper
 
-from ae.base import norm_line_sep
+from ae.base import norm_line_sep, read_file, write_file
 from ae.files import (
     copy_bytes, file_lines, file_transfer_progress, read_file_text, write_file_text, RegisteredFile, CachedFile)
 
@@ -108,15 +108,13 @@ def files_to_test():
     """ provide test file with properties. """
     fn = file_root
     os.mkdir(fn)
-    with open(file_without_properties, 'w') as fp:
-        fp.write(file_content)
+    write_file(file_without_properties, file_content)
 
     for name, value in file_properties.items():
         fn = os.path.join(fn, name + '_' + str(value))
         os.mkdir(fn)
     fn = os.path.join(fn, file_name + file_ext)
-    with open(fn, 'w') as fp:
-        fp.write(file_content)
+    write_file(fn, file_content)
 
     yield file_without_properties, fn
 
@@ -142,36 +140,36 @@ class TestCopyBytes:
         f1, f2 = files_to_test
         file_obj1 = open(f1, "rb")
 
-        errors = list()
+        errors = []
         assert not copy_bytes("x", "y", errors=errors, progress_kwarg1="z")
         assert errors
 
-        errors = list()
+        errors = []
         assert not copy_bytes(file_obj1, "y", errors=errors)
         assert errors
 
-        errors = list()
+        errors = []
         assert not copy_bytes(file_obj1, "y", move_file=True, errors=errors)
         assert errors
 
-        errors = list()
+        errors = []
         assert not copy_bytes("x", file_obj1, overwrite=True, errors=errors)
         assert errors
 
-        errors = list()
+        errors = []
         assert not copy_bytes("x", file_obj1, recoverable=True, errors=errors)
         assert errors
 
-        errors = list()
+        errors = []
         assert not copy_bytes(f1, "in/:/valid", errors=errors)  # dst file creation error
         assert errors
 
-        errors = list()
+        errors = []
         assert not copy_bytes(f1, file_obj1, errors=errors)     # exception because file_obj1 is opened for read-only
         assert errors
 
         file_obj1.seek(0, 2)    # put src_file (file_obj1) to EOF to simulate empty chunk error
-        errors = list()
+        errors = []
         assert not copy_bytes(file_obj1, f2, total_bytes=999, overwrite=True, errors=errors)
         assert errors
 
@@ -180,11 +178,11 @@ class TestCopyBytes:
     def test_basics(self, files_to_test):
         f1, f2 = files_to_test
 
-        errors = list()
+        errors = []
         assert not copy_bytes(f1, f2, errors=errors)
         assert errors
 
-        errors = list()
+        errors = []
         assert copy_bytes(f1, f2, overwrite=True, errors=errors) == f2
         assert not errors
 
@@ -202,7 +200,7 @@ class TestCopyBytes:
     def test_progress_func(self, files_to_test):
         f1, f2 = files_to_test
         progress_called = False
-        progress_kwargs = dict()
+        progress_kwargs = {}
         progress_return = False
         
         def pro_fnc(**kwargs):
@@ -214,7 +212,7 @@ class TestCopyBytes:
             
         pro_kwarg1 = 'tst_arg'
         
-        errors = list()
+        errors = []
         assert copy_bytes(f1, f2, overwrite=True, errors=errors, progress_func=pro_fnc, pro_kwarg1=pro_kwarg1)
         assert not errors
         assert progress_called
@@ -236,8 +234,7 @@ class TestCopyBytes:
         assert read_file_text(f2) == read_file_text(f1)
 
         half_len = int(len(file_content) / 2)
-        with open(f2, "wb") as fp:
-            fp.write(bytes(file_content[:half_len], 'utf8'))
+        write_file(f2, bytes(file_content[:half_len], 'utf8'), extra_mode="b")
 
         assert copy_bytes(f1, f2, overwrite=True, recoverable=True)
         assert read_file_text(f2) == read_file_text(f1)
@@ -252,7 +249,7 @@ class TestRegisteredFile:
         assert rf.path == file_without_properties
         assert rf.stem == file_name
         assert rf.ext == file_ext
-        assert rf.properties == dict()
+        assert rf.properties == {}
 
     def test_init_with_properties(self, files_to_test):
         _, wip = files_to_test
@@ -288,7 +285,7 @@ class TestCachedFile:
         assert cf.path == file_without_properties
         assert cf.stem == file_name
         assert cf.ext == file_ext
-        assert cf.properties == dict()
+        assert cf.properties == {}
         assert cf.late_loading
         assert cf.loaded_object is cf   # mock is returning passed cf instance
 
@@ -328,9 +325,7 @@ class TestCachedFile:
     def test_file_io_open_read(self):
         def load_file_content(lcf):
             """ read file content """
-            with open(lcf.path) as fp:
-                content = fp.read()
-            return content
+            return read_file(lcf.path)
 
         cf = CachedFile('tests/conftest.py', object_loader=load_file_content)
         assert isinstance(cf.loaded_object, str)

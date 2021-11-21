@@ -39,7 +39,7 @@ a registered file object represents a single file on your file system and can be
     assert rf.path == 'path/to/the/file_name.extension'
     assert rf.stem == 'file_name'
     assert rf.ext == '.extension'
-    assert rf.properties == dict()
+    assert rf.properties == {}
 
 file properties will be automatically attached to each file object instance with the instance attribute
 :attr:`~RegisteredFile.properties`. in the last example it results in an empty dictionary because the
@@ -100,10 +100,10 @@ import os
 import pathlib
 from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, cast
 
-from ae.base import norm_line_sep                                                   # type: ignore
+from ae.base import norm_line_sep, read_file, write_file                                                # type: ignore
 
 
-__version__ = '0.2.18'
+__version__ = '0.2.19'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -162,7 +162,7 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
     src_named = isinstance(src_file, str)
     dst_named = isinstance(dst_file, str)
     if not isinstance(errors, list):
-        errors = list()
+        errors = []
 
     if progress_func == _default_progress_callback and progress_kwargs:
         errors.append(f"no progress callback function passed but kwargs={progress_kwargs}")
@@ -280,8 +280,7 @@ def read_file_text(file_path: str, encoding: Optional[str] = None, error_handlin
                                 :paramref:'~read_file_text.error_handling` parameter).
     """
     try:
-        with open(file_path, encoding=encoding, errors=error_handling) as file_handle:
-            return file_handle.read()
+        return read_file(file_path, encoding=encoding, error_handling=error_handling)
     except (FileNotFoundError, OSError, PermissionError, ValueError):
         return "" if error_handling == 'ignore' else None
 
@@ -298,8 +297,7 @@ def write_file_text(text_or_lines: Union[str, List[str], Tuple[str]], file_path:
     """
     content = text_or_lines if isinstance(text_or_lines, str) else os.linesep.join(text_or_lines)
     try:
-        with open(file_path, 'w', encoding=encoding) as file_handle:
-            file_handle.write(content)
+        write_file(file_path, content, encoding=encoding)
     except (FileExistsError, FileNotFoundError, OSError, PermissionError, ValueError):
         return False
     return True
@@ -321,7 +319,7 @@ class RegisteredFile:
         dir_name, base_name = os.path.split(file_path)
         self.stem, self.ext = os.path.splitext(base_name)
 
-        self.properties: PropertiesType = dict()                        #: file properties
+        self.properties: PropertiesType = {}                            #: file properties
         for folder in dir_name.split(os.path.sep):
             parts = folder.split("_", maxsplit=1)
             if len(parts) == 2:
