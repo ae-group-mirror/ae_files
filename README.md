@@ -1,32 +1,34 @@
-<!--
-  THIS FILE IS EXCLUSIVELY MAINTAINED IN THE NAMESPACE ROOT PACKAGE. CHANGES HAVE TO BE DONE THERE.
--->
-# files portion of ae namespace package
+<!-- THIS FILE IS EXCLUSIVELY MAINTAINED by the project ae V0.2.85 -->
+<!-- THIS FILE IS EXCLUSIVELY MAINTAINED by the project aedev_tpl_namespace_root V0.3.6 -->
+# files 0.3.19
 
-[![GitLabPipeline](https://img.shields.io/gitlab/pipeline/ae-group/ae_files/master?logo=python)](
+[![GitLab develop](https://img.shields.io/gitlab/pipeline/ae-group/ae_files/develop?logo=python)](
     https://gitlab.com/ae-group/ae_files)
-[![PyPIVersion](https://img.shields.io/pypi/v/ae_files)](
+[![LatestPyPIrelease](
+    https://img.shields.io/gitlab/pipeline/ae-group/ae_files/release0.2.19?logo=python)](
+    https://gitlab.com/ae-group/ae_files/-/tree/release0.2.19)
+[![PyPIVersions](https://img.shields.io/pypi/v/ae_files)](
     https://pypi.org/project/ae-files/#history)
 
->The portions (modules and sub-packages) of the Application Environment for Python are within
-the `ae` namespace and are providing helper methods and classes to develop
-full-featured applications with Python.
+>ae namespace module portion files: generic file object helpers.
 
 [![Coverage](https://ae-group.gitlab.io/ae_files/coverage.svg)](
-    https://ae-group.gitlab.io/ae_files/coverage/ae_files_py.html)
+    https://ae-group.gitlab.io/ae_files/coverage/index.html)
 [![MyPyPrecision](https://ae-group.gitlab.io/ae_files/mypy.svg)](
     https://ae-group.gitlab.io/ae_files/lineprecision.txt)
 [![PyLintScore](https://ae-group.gitlab.io/ae_files/pylint.svg)](
     https://ae-group.gitlab.io/ae_files/pylint.log)
 
 [![PyPIImplementation](https://img.shields.io/pypi/implementation/ae_files)](
-    https://pypi.org/project/ae-files/)
+    https://gitlab.com/ae-group/ae_files/)
 [![PyPIPyVersions](https://img.shields.io/pypi/pyversions/ae_files)](
-    https://pypi.org/project/ae-files/)
+    https://gitlab.com/ae-group/ae_files/)
 [![PyPIWheel](https://img.shields.io/pypi/wheel/ae_files)](
-    https://pypi.org/project/ae-files/)
+    https://gitlab.com/ae-group/ae_files/)
 [![PyPIFormat](https://img.shields.io/pypi/format/ae_files)](
     https://pypi.org/project/ae-files/)
+[![PyPILicense](https://img.shields.io/pypi/l/ae_files)](
+    https://gitlab.com/ae-group/ae_files/-/blob/develop/LICENSE.md)
 [![PyPIStatus](https://img.shields.io/pypi/status/ae_files)](
     https://libraries.io/pypi/ae-files)
 [![PyPIDownloads](https://img.shields.io/pypi/dm/ae_files)](
@@ -36,36 +38,38 @@ full-featured applications with Python.
 ## installation
 
 
-execute the following command to use the ae.files module in your
-application. it will install ae.files into your python (virtual) environment:
+execute the following command to install the
+ae.files module
+in the currently active virtual environment:
  
 ```shell script
 pip install ae-files
 ```
 
-if you instead want to contribute to this portion then first fork
-[the ae_files repository at GitLab](https://gitlab.com/ae-group/ae_files "ae.files code repository"),
-then pull it to your machine and finally execute the following command in the root folder
-of this repository (ae_files):
+if you want to contribute to this portion then first fork
+[the ae_files repository at GitLab](
+https://gitlab.com/ae-group/ae_files "ae.files code repository").
+after that pull it to your machine and finally execute the
+following command in the root folder of this repository
+(ae_files):
 
 ```shell script
 pip install -e .[dev]
 ```
 
-the last command will install this module portion into your virtual environment, along with
-the tools you need to develop and run tests or to extend the portion documentation.
-to contribute only to the unit tests or to the documentation of this portion replace
-the setup extras key `dev` in the above command with `tests` or `docs` respectively.
+the last command will install this module portion, along with the tools you need
+to develop and run tests or to extend the portion documentation. to contribute only to the unit tests or to the
+documentation of this portion, replace the setup extras key `dev` in the above command with `tests` or `docs`
+respectively.
+
+more detailed explanations on how to contribute to this project
+[are available here](
+https://gitlab.com/ae-group/ae_files/-/blob/develop/CONTRIBUTING.rst)
 
 
 ## namespace portion documentation
 
-more info on the features and usage of this portion are available at
-[ReadTheDocs](https://ae.readthedocs.io/en/latest/_autosummary/ae.files.html#module-ae.files
+information on the features and usage of this portion are available at
+[ReadTheDocs](
+https://ae.readthedocs.io/en/latest/_autosummary/ae.files.html#module-ae.files
 "ae_files documentation").
-
-<!-- common files version 0.2.77 deployed version 0.2.17 (with 0.2.77)
-     to https://gitlab.com/ae-group as ae_files module as well as
-     to https://ae-group.gitlab.io with CI check results as well as
-     to https://pypi.org/project/ae-files as namespace portion ae-files.
--->
