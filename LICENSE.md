@@ -1,4 +1,4 @@
-<!-- THIS FILE IS EXCLUSIVELY MAINTAINED by the project aedev.tpl_project V0.3.25 -->
+<!-- THIS FILE IS EXCLUSIVELY MAINTAINED by the project aedev.tpl_project V0.3.26 -->
 ### GNU GENERAL PUBLIC LICENSE
 
 Version 3, 29 June 2007

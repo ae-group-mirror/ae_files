@@ -103,7 +103,7 @@ from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, 
 from ae.base import norm_line_sep, read_file, write_file                                                # type: ignore
 
 
-__version__ = '0.3.20'
+__version__ = '0.3.21'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -141,14 +141,15 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
                                 `copy_bytes` will determine this value from the file length of the destination file.
     :param total_bytes:         source file size in bytes (needed only if :paramref:`~copy_bytes.src_file` is a stream).
     :param buf_size:            size of copy buffer/chunk in bytes (that get copied before each progress callback).
-    :param overwrite:           pass True to allow overwrite of destination file. if the destination file exists already
-                                then this function will return an error (when this argument get not passed or is False).
+    :param overwrite:           pass True to allow to overwrite of destination file. if the destination file exists
+                                already then this function will return an error (when this argument get not passed
+                                or is False).
     :param move_file:           pass True to delete source file on complete copying (only works if source is a stream).
     :param recoverable:         pass True to allow recoverable file copy (only working if source is a stream).
     :param errors:              pass empty list to get a list of detailed error messages.
     :param progress_func:       optional callback to dispatch or break/cancel the copy progress for large files.
                                 if the callback returns a non-empty value it will be interpreted as cancel reason,
-                                the copy process will be stopped and a error will be returned.
+                                the copy process will be stopped and an error will be returned.
     :param progress_kwargs:     optional additional kwargs passed to the progress function. the kwargs `total_bytes`
                                 and `transferred_bytes` will be updated before the callback.
     :return:                    destination file name/stream as string or empty string on error.
@@ -277,7 +278,7 @@ def read_file_text(file_path: str, encoding: Optional[str] = None, error_handlin
                                 and will return an empty string on any file/os exception.
     :return:                    file content string. if the file could not be decoded, found or opened,
                                 then return empty string or None (None only if `'strict'` got passed to the
-                                :paramref:'~read_file_text.error_handling` parameter).
+                                :paramref:`~read_file_text.error_handling` parameter).
     """
     try:
         return read_file(file_path, encoding=encoding, error_handling=error_handling)
