@@ -1,6 +1,6 @@
 
 ..
-    THIS FILE IS EXCLUSIVELY MAINTAINED by the project aedev.tpl_project V0.3.26
+    THIS FILE IS EXCLUSIVELY MAINTAINED by the project aedev.tpl_project V0.3.27
 
 contributing
 ============
@@ -50,13 +50,13 @@ using the git repository manager `grm`
 1. fork and clone the repository of this project to your computer
 
    in your console change the working directory to your project's parent folder. then run the following command with
-   the <new_feature_or_fix> part replaced by an appropriate branch name, describing shortly your contribution::
+   the ``new_feature_or_fix`` part replaced by an appropriate branch name, describing shortly your contribution::
 
-      grm fork ae-group/ae_files
+      grm -b new_feature_or_fix fork ae-group/ae_files
 
    .. note::
       the fork action of ``grm`` will also add the forked repository as the remote ``upstream`` to your local
-      repository. additionally you can specify the option ``--branch <new_feature_or_fix>`` to create a new git branch.
+      repository.
 
 2. code
 

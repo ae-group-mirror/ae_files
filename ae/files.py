@@ -79,7 +79,7 @@ possibility to cache parts or the whole file content as well as the file pointer
     assert cf.properties['string'] == 'whatever'
 
 pn instantiation of the :class:`CachedFile` file object the default file object loader function
-:func:`_default_object_loader` will be used, which opens a file stream via Python's `open` built-in. alternatively
+:func:`_default_object_loader` will be used, which opens a file stream via Python's :func:`open` built-in. alternatively
 you can specify a specific file object loader with the :paramref:`~CachedFile.object_loader` parameter or by assigning
 a callable directly to the :attr:`~CachedFile.object_loader` attribute::
 
@@ -100,10 +100,10 @@ import os
 import pathlib
 from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, cast
 
-from ae.base import norm_line_sep, read_file, write_file                                                # type: ignore
+from ae.base import dummy_function, norm_line_sep, read_file, write_file                                # type: ignore
 
 
-__version__ = '0.3.21'
+__version__ = '0.3.22'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -119,13 +119,10 @@ PropertiesType = Dict[str, PropertyType]                                        
 FilenameOrStream = Union[str, BinaryIO]                                         #: file name or file stream pointer
 
 
-_default_progress_callback = lambda **_: None       # noqa: E731
-
-
 def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
                transferred_bytes: int = 0, total_bytes: int = 0, buf_size: int = COPY_BUF_LEN, overwrite: bool = False,
                move_file: bool = False, recoverable: bool = False, errors: Optional[List[str]] = None,
-               progress_func: Callable = _default_progress_callback, **progress_kwargs) -> str:
+               progress_func: Callable = dummy_function, **progress_kwargs) -> str:
     """ recoverable copy of a file or stream (file-like object), optionally with progress callbacks.
 
     :param src_file:            source file name or opened stream (file-like) object. if passing a non-seekable stream
@@ -165,7 +162,7 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
     if not isinstance(errors, list):
         errors = []
 
-    if progress_func == _default_progress_callback and progress_kwargs:
+    if progress_func is dummy_function and progress_kwargs:
         errors.append(f"no progress callback function passed but kwargs={progress_kwargs}")
     if not src_named:
         if not total_bytes:
