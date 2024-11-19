@@ -234,7 +234,7 @@ class TestCopyBytes:
         assert read_file_text(f2) == read_file_text(f1)
 
         half_len = int(len(file_content) / 2)
-        write_file(f2, bytes(file_content[:half_len], 'utf8'), extra_mode="b")
+        write_file(f2, bytes(file_content[:half_len], 'utf8'))  # , extra_mode="b") not needed because content is bytes
 
         assert copy_bytes(f1, f2, overwrite=True, recoverable=True)
         assert read_file_text(f2) == read_file_text(f1)
