@@ -1,16 +1,16 @@
-<!-- THIS FILE IS EXCLUSIVELY MAINTAINED by the project ae.ae V0.3.92 -->
-<!-- THIS FILE IS EXCLUSIVELY MAINTAINED by the project aedev.tpl_namespace_root V0.3.13 -->
-# files 0.3.22
+<!-- THIS FILE IS EXCLUSIVELY MAINTAINED by the project ae.ae V0.3.94 -->
+<!-- THIS FILE IS EXCLUSIVELY MAINTAINED by the project aedev.tpl_namespace_root V0.3.14 -->
+# files 0.3.23
 
 [![GitLab develop](https://img.shields.io/gitlab/pipeline/ae-group/ae_files/develop?logo=python)](
     https://gitlab.com/ae-group/ae_files)
 [![LatestPyPIrelease](
-    https://img.shields.io/gitlab/pipeline/ae-group/ae_files/release0.3.21?logo=python)](
-    https://gitlab.com/ae-group/ae_files/-/tree/release0.3.21)
+    https://img.shields.io/gitlab/pipeline/ae-group/ae_files/release0.3.22?logo=python)](
+    https://gitlab.com/ae-group/ae_files/-/tree/release0.3.22)
 [![PyPIVersions](https://img.shields.io/pypi/v/ae_files)](
     https://pypi.org/project/ae-files/#history)
 
->ae namespace module portion files: generic file object helpers.
+>ae_files module 0.3.23.
 
 [![Coverage](https://ae-group.gitlab.io/ae_files/coverage.svg)](
     https://ae-group.gitlab.io/ae_files/coverage/index.html)
