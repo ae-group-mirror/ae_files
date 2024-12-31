@@ -103,7 +103,7 @@ from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, 
 from ae.base import dummy_function, norm_line_sep, read_file, write_file                                # type: ignore
 
 
-__version__ = '0.3.23'
+__version__ = '0.3.24'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -163,7 +163,7 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
         errors = []
 
     if progress_func is dummy_function and progress_kwargs:
-        errors.append(f"no progress callback function passed but kwargs={progress_kwargs}")
+        errors.append(f"no progress callback function passed but {progress_kwargs=}")
     if not src_named:
         if not total_bytes:
             errors.append("total_bytes has to be specified for source file-stream")
@@ -211,7 +211,7 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
             progress_kwargs.update(transferred_bytes=transferred_bytes, total_bytes=total_bytes)
             cancel_reason = progress_func(**progress_kwargs)
             if cancel_reason:
-                errors.append(f"progress function request cancellation; reason={cancel_reason}")
+                errors.append(f"progress function request cancellation; {cancel_reason=}")
                 break
 
     except (OSError, Exception) as ex:
