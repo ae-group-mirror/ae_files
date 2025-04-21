@@ -2,26 +2,26 @@
 generic file object helpers
 ===========================
 
-this namespace portion is pure Python providing helpers for file object and content managing. it only depends on the
-:mod:`ae.base` namespace portion.
+this namespace portion is pure Python code, providing helpers for file object and content managing. it only depends
+on the :mod:`ae.base` namespace portion.
 
 .. hint:: more helper functions to manage directory/folder structures are provided by the :mod:`ae.paths` portion.
 
 the helper function :func:`copy_bytes` provides recoverable copies of binary files and file streams, with progress
-callbacks for each copied bytes chunk/buffer.
+callbacks for every copied chunk/buffer.
 
 :func:`file_lines` and :func:`read_file_text` are helpers to read/load text file contents.
 
 the function :func:`write_file_text` stores a string to a text file.
 
-the helper function :func:`file_transfer_progress` puts the amount of transferred bytes in a short and user readable
-format, to be displayed as progress string in a file transfer progress.
+the helper function :func:`file_transfer_progress` puts the number of transferred bytes in a short and user-readable
+format, to be displayed as progress string in a file transfer.
 
 :class:`RegisteredFile` and :class:`CachedFile` encapsulate and optionally cache the contents of a file within a file
 object. instances of these classes are compatible with the file objects provided by Python's :mod:`pathlib` module. but
 also pure path strings can be used as file objects (see also the :data:`FileObject` type).
 
-all these types of file objects are supported by the files register class :class:`~ae.paths.FilesRegister` from the
+all these types of file objects are supported by the class :class:`~ae.paths.FilesRegister` from the
 :mod:`ae.paths` portion.
 
 
@@ -49,8 +49,8 @@ file properties will be automatically attached to each file object instance with
 file properties
 ^^^^^^^^^^^^^^^
 
-file property names and values are automatically determined from the names of their sub-folders, specified in the
-:attr:`~RegisteredFile.path` attribute. every sub-folder name containing an underscore character in the format
+file property names and values are automatically determined from the names of their subfolders, specified in the
+:attr:`~RegisteredFile.path` attribute. every subfolder name containing an underscore character in the format
 <property-name>_<value> will be interpreted as a file property::
 
     rf = RegisteredFile('property1_69/property2_3.69/property3_whatever/file_name.ext')
@@ -79,9 +79,9 @@ possibility to cache parts or the whole file content as well as the file pointer
     assert cf.properties['string'] == 'whatever'
 
 pn instantiation of the :class:`CachedFile` file object the default file object loader function
-:func:`_default_object_loader` will be used, which opens a file stream via Python's :func:`open` built-in. alternatively
-you can specify a specific file object loader with the :paramref:`~CachedFile.object_loader` parameter or by assigning
-a callable directly to the :attr:`~CachedFile.object_loader` attribute::
+:func:`_default_object_loader` will be used, which opens a file stream via Python's :func:`open` built-in.
+alternatively, you can specify a specific file object loader with the :paramref:`~CachedFile.object_loader` parameter
+or by assigning a callable directly to the :attr:`~CachedFile.object_loader` attribute::
 
     cf = CachedFile('integer_69/float_3.69/string_whatever/file_name.ext',
                     object_loader=lambda cached_file_obj: my_open_method(cached_file_obj.path))
@@ -103,7 +103,7 @@ from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, 
 from ae.base import dummy_function, norm_line_sep, read_file, write_file                                # type: ignore
 
 
-__version__ = '0.3.24'
+__version__ = '0.3.25'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -126,10 +126,10 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
     """ recoverable copy of a file or stream (file-like object), optionally with progress callbacks.
 
     :param src_file:            source file name or opened stream (file-like) object. if passing a non-seekable stream
-                                together with a non-zero value in :paramref:`~copy_bytes.transferred_bytes` then the
+                                together with a non-zero value in :paramref:`~copy_bytes.transferred_bytes`, then the
                                 source stream has to be set to the correct position before you call this function.
-                                if passing any source stream then also the total file/stream size has to be passed
-                                into the :paramref:`~copy_bytes.total_bytes` parameter. source file streams does also
+                                if passing any source stream, then also the total file/stream size has to be passed
+                                into the :paramref:`~copy_bytes.total_bytes` parameter. source file streams do also
                                 not support a True value in the :paramref:`~copy_bytes.move_file` argument.
     :param dst_file:            destination file name or opened stream (file-like) object. recoverable copies and copies
                                 with a True value in the :paramref:`~copy_bytes.overwrite` argument are not allowed;
@@ -138,15 +138,16 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
                                 `copy_bytes` will determine this value from the file length of the destination file.
     :param total_bytes:         source file size in bytes (needed only if :paramref:`~copy_bytes.src_file` is a stream).
     :param buf_size:            size of copy buffer/chunk in bytes (that get copied before each progress callback).
-    :param overwrite:           pass True to allow to overwrite of destination file. if the destination file exists
-                                already then this function will return an error (when this argument get not passed
-                                or is False).
-    :param move_file:           pass True to delete source file on complete copying (only works if source is a stream).
-    :param recoverable:         pass True to allow recoverable file copy (only working if source is a stream).
-    :param errors:              pass empty list to get a list of detailed error messages.
+    :param overwrite:           pass True to allow overwriting of the destination file. if the destination file exists
+                                already, then this function will return an error (when this argument gets not specified
+                                or has a value that evaluates as False).
+    :param move_file:           pass True to delete the source file on complete copying (only works if the source file
+                                is a stream).
+    :param recoverable:         pass True to allow recoverable file copy (only working if the source file is a stream).
+    :param errors:              pass an empty list to get a list of detailed error messages.
     :param progress_func:       optional callback to dispatch or break/cancel the copy progress for large files.
-                                if the callback returns a non-empty value it will be interpreted as cancel reason,
-                                the copy process will be stopped and an error will be returned.
+                                if the callback returns a non-empty value, it will be interpreted as cancel reason,
+                                the copy process will be stopped, and an error will be returned.
     :param progress_kwargs:     optional additional kwargs passed to the progress function. the kwargs `total_bytes`
                                 and `transferred_bytes` will be updated before the callback.
     :return:                    destination file name/stream as string or empty string on error.
@@ -154,7 +155,7 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
     .. hint::
         this function is extending the compatible Python functions :func:`shutil.copyfileobj`, :func:`shutil.copyfile`,
         :func:`shutil.copy`, :func:`shutil.copy2` and :meth:`http.server.SimpleHTTPRequestHandler.copyfile`
-        with recoverability and a progress callback. it can also be used as argument for the
+        with recoverability and a progress callback. it can also be used as an argument for the
         :paramref:`~shutil.copytree.copy_function` parameter of e.g. :func:`shutil.copytree` and :func:`shutil.move`.
     """
     src_named = isinstance(src_file, str)
@@ -178,9 +179,11 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
 
     src_fp: BinaryIO = cast(BinaryIO, None)
     try:
+        # pylint: disable-next=consider-using-with
         src_fp = open(cast(str, src_file), "rb") if src_named else cast(BinaryIO, src_file)
+        # pylint: disable-next=consider-using-with
         dst_fp = open(cast(str, dst_file), "ab+") if dst_named else cast(BinaryIO, dst_file)
-    except (OSError, Exception) as ex:
+    except (OSError, Exception) as ex:                              # pylint: disable=broad-exception-caught
         errors.append(str(ex))
         if src_named and src_fp:
             src_fp.close()
@@ -188,7 +191,7 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
 
     try:
         if not total_bytes:
-            total_bytes = os.fstat(src_fp.fileno()).st_size        # ALT: src_fp.seek(0, 2) and src_fp.tell()
+            total_bytes = os.fstat(src_fp.fileno()).st_size         # ALT: src_fp.seek(0, 2) and src_fp.tell()
         if recoverable:
             if not transferred_bytes:
                 transferred_bytes = os.fstat(dst_fp.fileno()).st_size
@@ -214,7 +217,7 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
                 errors.append(f"progress function request cancellation; {cancel_reason=}")
                 break
 
-    except (OSError, Exception) as ex:
+    except (OSError, Exception) as ex:      # pylint: disable=broad-exception-caught
         errors.append(str(ex))
 
     finally:
@@ -240,12 +243,12 @@ def file_lines(file_path: str, encoding: Optional[str] = None) -> Tuple[str, ...
 
 
 def file_transfer_progress(transferred_bytes: int, total_bytes: int = 0, decimal_places: int = 3) -> str:
-    """ return string to display the transfer progress of transferred bytes in short and user readable format.
+    """ return string to display the transfer progress of transferred bytes in short and user-readable format.
 
     :param transferred_bytes:   number of transferred bytes.
     :param total_bytes:         number of total bytes.
     :param decimal_places:      number of decimal places (should be between 0 and 3).
-    :return:                    formatted string to display progress of currently running transfer.
+    :return:                    formatted string to display the progress of the currently running transfer.
     """
     def _unit_size(size: float) -> Tuple[float, str]:
         for unit in ("", "K", "M", "G", "T"):
@@ -257,9 +260,11 @@ def file_transfer_progress(transferred_bytes: int, total_bytes: int = 0, decimal
     trs, tru = _unit_size(transferred_bytes)
     if total_bytes and transferred_bytes != total_bytes:
         tos, tou = _unit_size(total_bytes)
+        # pylint: disable-next=consider-using-f-string
         tru = ("" if tru == tou else tru + " ") + "/ {tos:.{de}f} {tou}".format(
             tos=tos, de=decimal_places if tos % 1 > 0 else 0, tou=tou)
 
+    # pylint: disable-next=consider-using-f-string
     return "{trs:.{de}f} {tru}".format(trs=trs, de=decimal_places if trs % 1 > 0 else 0, tru=tru)
 
 
@@ -274,7 +279,7 @@ def read_file_text(file_path: str, encoding: Optional[str] = None, error_handlin
                                 the default value `'ignore'` will ignore any decoding errors (missing some characters)
                                 and will return an empty string on any file/os exception.
     :return:                    file content string. if the file could not be decoded, found or opened,
-                                then return empty string or None (None only if `'strict'` got passed to the
+                                then return an empty string or None (None only if `'strict'` got passed to the
                                 :paramref:`~read_file_text.error_handling` parameter).
     """
     try:
@@ -304,7 +309,7 @@ def write_file_text(text_or_lines: Union[str, List[str], Tuple[str]], file_path:
 class RegisteredFile:
     """ represents a single file - see also :ref:`registered file` examples. """
     def __init__(self, file_path: str, **kwargs):
-        """ initialize registered file_obj instance.
+        """ initialize the registered file instance.
 
         :param file_path:       file path string.
         :param kwargs:          not supported, only there to have compatibility to :class:`CachedFile` to detect
@@ -326,7 +331,7 @@ class RegisteredFile:
     def __eq__(self, other: FileObject) -> bool:
         """ allow equality checks.
 
-        :param other:           other file object to compare this instance with.
+        :param other:           another file object to compare this instance with.
         :return:                True if both objects are of this type and contain a file with the same path, else False.
         """
         return isinstance(other, self.__class__) and other.path == self.path
@@ -339,7 +344,7 @@ class RegisteredFile:
         return f"{self.__class__.__name__}({self.path!r})"
 
     def __str__(self):
-        """ return file path.
+        """ return the file path of the registered file.
 
         :return:    file path string of this file object.
         """
@@ -367,14 +372,14 @@ def _default_object_loader(file_obj: FileObject):
     :param file_obj:            file object (path string or obj with `path` attribute holding the complete file path).
     :return:                    file handle to the opened file.
     """
-    return open(str(file_obj))
+    return open(str(file_obj))                                      # pylint: disable=unspecified-encoding
 
 
 class CachedFile(RegisteredFile):
     """ represents a cacheables registered file object - see also :ref:`cached file` examples. """
     def __init__(self, file_path: str,
                  object_loader: Callable[['CachedFile', ], Any] = _default_object_loader, late_loading: bool = True):
-        """ create cached file object instance.
+        """ create a cached file object instance.
 
         :param file_path:       path string of the file.
         :param object_loader:   callable converting the file_obj into a cached object (available
@@ -390,7 +395,7 @@ class CachedFile(RegisteredFile):
     def loaded_object(self) -> Any:
         """ loaded object class instance property.
 
-        :return: loaded and cached file object.
+        :return: the loaded and cached file object.
         """
         if self.late_loading and not self._loaded_object:
             self._loaded_object = self.object_loader(self)

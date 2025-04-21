@@ -105,7 +105,7 @@ file_content = "test file content"
 
 @pytest.fixture
 def files_to_test():
-    """ provide test file with properties. """
+    """ provide a test file with properties. """
     fn = file_root
     os.mkdir(fn)
     write_file(file_without_properties, file_content)
@@ -125,7 +125,7 @@ class FileLoaderMockClass:
     """ cacheables file object loader mock class """
     @staticmethod
     def load(file):
-        """ create and return file object """
+        """ create and return a file object """
         return file
 
 
@@ -168,7 +168,7 @@ class TestCopyBytes:
         assert not copy_bytes(f1, file_obj1, errors=errors)     # exception because file_obj1 is opened for read-only
         assert errors
 
-        file_obj1.seek(0, 2)    # put src_file (file_obj1) to EOF to simulate empty chunk error
+        file_obj1.seek(0, 2)    # put src_file (file_obj1) to EOF to simulate an empty chunk error
         errors = []
         assert not copy_bytes(file_obj1, f2, total_bytes=999, overwrite=True, errors=errors)
         assert errors
@@ -234,7 +234,7 @@ class TestCopyBytes:
         assert read_file_text(f2) == read_file_text(f1)
 
         half_len = int(len(file_content) / 2)
-        write_file(f2, bytes(file_content[:half_len], 'utf8'))  # , extra_mode="b") not needed because content is bytes
+        write_file(f2, bytes(file_content[:half_len], 'utf8'))  # arg extra_mode="b" not needed because content is bytes
 
         assert copy_bytes(f1, f2, overwrite=True, recoverable=True)
         assert read_file_text(f2) == read_file_text(f1)
@@ -287,7 +287,7 @@ class TestCachedFile:
         assert cf.ext == file_ext
         assert cf.properties == {}
         assert cf.late_loading
-        assert cf.loaded_object is cf   # mock is returning passed cf instance
+        assert cf.loaded_object is cf   # mock is returning the passed CachedFile instance
 
         cf = CachedFile(wop)
         assert isinstance(cf.loaded_object, TextIOWrapper)
@@ -305,7 +305,7 @@ class TestCachedFile:
         assert cf.stem == file_name
         assert cf.ext == file_ext
         assert cf.properties == file_properties
-        assert cf.loaded_object is cf   # mock is returning passed cf instance
+        assert cf.loaded_object is cf   # mock is returning the passed CachedFile instance
 
     def test_init_early_loading(self, files_to_test):
         wop, wip = files_to_test
