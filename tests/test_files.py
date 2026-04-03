@@ -10,13 +10,15 @@ from ae.files import (
     copy_bytes, file_lines, file_transfer_progress, read_file_text, write_file_text, RegisteredFile, CachedFile)
 
 
+text_block = "line1\nline2\rline3\r\n"
+
+
 class TestHelpers:
     def test_file_lines(self):
-        text = "line1\nline2\rline3\r\n"
         fnm = "tests/tst_lines.txt"
         try:
-            write_file_text(text, fnm)
-            assert file_lines(fnm) == tuple(norm_line_sep(text).split("\n"))
+            write_file_text(text_block, fnm)
+            assert file_lines(fnm) == tuple(norm_line_sep(text_block).splitlines())
         finally:
             if os.path.exists(fnm):
                 os.remove(fnm)
@@ -64,14 +66,13 @@ class TestHelpers:
         assert file_transfer_progress(1024 * 1024 * 1024 * 1024, 1024 * 1024 * 1024 * 1024) == "1 TBytes"
 
     def test_read_file_text(self):
-        text = "line1\nline2\rline3\r\n"
         fnm = "tests/tst_content.txt"
         try:
-            write_file_text(text, fnm)
-            assert read_file_text(fnm) == norm_line_sep(text)
+            write_file_text(text_block, fnm)
+            assert read_file_text(fnm) == norm_line_sep(text_block)
 
-            write_file_text(norm_line_sep(text), fnm)
-            assert read_file_text(fnm) == norm_line_sep(text)
+            write_file_text(norm_line_sep(text_block), fnm)
+            assert read_file_text(fnm) == norm_line_sep(text_block)
         finally:
             if os.path.exists(fnm):
                 os.remove(fnm)
@@ -81,11 +82,10 @@ class TestHelpers:
         assert read_file_text(":invalid \\=// file name....") == ""
 
     def test_write_file_text(self):
-        text = "line1\nline2\rline3\r\n"
         fnm = "tests/tst_write.txt"
         try:
-            assert write_file_text(text, fnm)
-            assert read_file_text(fnm) == norm_line_sep(text)
+            assert write_file_text(text_block, fnm)
+            assert read_file_text(fnm) == norm_line_sep(text_block)
         finally:
             if os.path.exists(fnm):
                 os.remove(fnm)

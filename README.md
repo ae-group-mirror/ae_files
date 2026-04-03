@@ -1,16 +1,16 @@
-<!-- THIS FILE IS EXCLUSIVELY MAINTAINED by the project ae.ae V0.3.95 -->
-<!-- THIS FILE IS EXCLUSIVELY MAINTAINED by the project aedev.tpl_namespace_root V0.3.14 -->
-# files 0.3.25
+<!-- THIS FILE IS EXCLUSIVELY MAINTAINED by the project ae.ae v0.3.103 -->
+<!-- THIS FILE IS EXCLUSIVELY MAINTAINED by the project aedev.namespace_root_tpls v0.3.22 -->
+# files 0.3.26
 
 [![GitLab develop](https://img.shields.io/gitlab/pipeline/ae-group/ae_files/develop?logo=python)](
     https://gitlab.com/ae-group/ae_files)
 [![LatestPyPIrelease](
-    https://img.shields.io/gitlab/pipeline/ae-group/ae_files/release0.3.24?logo=python)](
-    https://gitlab.com/ae-group/ae_files/-/tree/release0.3.24)
+    https://img.shields.io/gitlab/pipeline/ae-group/ae_files/release0.3.26?logo=python)](
+    https://gitlab.com/ae-group/ae_files/-/tree/release0.3.26)
 [![PyPIVersions](https://img.shields.io/pypi/v/ae_files)](
     https://pypi.org/project/ae-files/#history)
 
->ae_files module 0.3.25.
+>ae namespace module portion files: generic file object helpers.
 
 [![Coverage](https://ae-group.gitlab.io/ae_files/coverage.svg)](
     https://ae-group.gitlab.io/ae_files/coverage/index.html)
@@ -54,7 +54,7 @@ following command in the root folder of this repository
 (ae_files):
 
 ```shell script
-pip install -e .[dev]
+pip install --editable .[dev]
 ```
 
 the last command will install this module portion, along with the tools you need
