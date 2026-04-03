@@ -103,7 +103,7 @@ from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, 
 from ae.base import dummy_function, norm_line_sep, read_file, write_file                                # type: ignore
 
 
-__version__ = '0.3.25'
+__version__ = '0.3.26'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -119,6 +119,7 @@ PropertiesType = Dict[str, PropertyType]                                        
 FilenameOrStream = Union[str, BinaryIO]                                         #: file name or file stream pointer
 
 
+# pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
 def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
                transferred_bytes: int = 0, total_bytes: int = 0, buf_size: int = COPY_BUF_LEN, overwrite: bool = False,
                move_file: bool = False, recoverable: bool = False, errors: Optional[List[str]] = None,
@@ -239,7 +240,7 @@ def file_lines(file_path: str, encoding: Optional[str] = None) -> Tuple[str, ...
     :return:                    tuple of the lines found in the specified file
                                 or empty tuple if the file could not be found or opened.
     """
-    return tuple(norm_line_sep(read_file_text(file_path, encoding=encoding) or "").split("\n"))
+    return tuple(norm_line_sep(read_file_text(file_path, encoding=encoding) or "").splitlines())
 
 
 def file_transfer_progress(transferred_bytes: int, total_bytes: int = 0, decimal_places: int = 3) -> str:
