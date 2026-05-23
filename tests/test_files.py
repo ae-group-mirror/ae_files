@@ -5,7 +5,9 @@ import shutil
 
 from io import TextIOWrapper
 
-from ae.base import norm_line_sep, read_file, write_file
+from ae.base import norm_line_sep, read_file, write_bin_file, write_file
+
+
 from ae.files import (
     copy_bytes, file_lines, file_transfer_progress, read_file_text, write_file_text, RegisteredFile, CachedFile)
 
@@ -234,7 +236,7 @@ class TestCopyBytes:
         assert read_file_text(f2) == read_file_text(f1)
 
         half_len = int(len(file_content) / 2)
-        write_file(f2, bytes(file_content[:half_len], 'utf8'))  # arg extra_mode="b" not needed because content is bytes
+        write_bin_file(f2, bytes(file_content[:half_len], 'utf8'))
 
         assert copy_bytes(f1, f2, overwrite=True, recoverable=True)
         assert read_file_text(f2) == read_file_text(f1)

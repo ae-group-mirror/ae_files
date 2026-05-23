@@ -1,4 +1,4 @@
-# THIS FILE IS EXCLUSIVELY MAINTAINED by the project aedev.project_tpls v0.3.77
+# THIS FILE IS EXCLUSIVELY MAINTAINED by the project aedev.project_tpls v0.3.78
 """ setup of ae namespace module portion files: generic file object helpers. """
 import sys
 # noinspection PyUnresolvedReferences
@@ -75,7 +75,7 @@ setup_kwargs = {
     },
     'python_requires': '>=3.12',
     'url': 'https://gitlab.com/ae-group/ae_files',
-    'version': '0.3.26',
+    'version': '0.3.27',
     'zip_safe': True,
 }
 

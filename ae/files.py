@@ -103,7 +103,7 @@ from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, 
 from ae.base import dummy_function, norm_line_sep, read_file, write_file                                # type: ignore
 
 
-__version__ = '0.3.26'
+__version__ = '0.3.27'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -178,7 +178,7 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
     if errors:
         return ""
 
-    src_fp: BinaryIO = cast(BinaryIO, None)
+    src_fp: BinaryIO = cast(BinaryIO, cast(object, None))
     try:
         # pylint: disable-next=consider-using-with
         src_fp = open(cast(str, src_file), "rb") if src_named else cast(BinaryIO, src_file)
@@ -270,18 +270,15 @@ def file_transfer_progress(transferred_bytes: int, total_bytes: int = 0, decimal
 
 
 def read_file_text(file_path: str, encoding: Optional[str] = None, error_handling: str = 'ignore') -> Optional[str]:
-    """ returning content of the text file specified by file_path argument as string.
+    """ returning content of the text file specified by file_path argument as string, while suppressing exceptions.
 
     :param file_path:           file path/name to load into a string.
-    :param encoding:            encoding used to load and convert/interpret the file content.
-    :param error_handling:      pass `'strict'` or `None` to return `None` (instead of an empty string) for the cases
-                                where either a decoding `ValueError` exception or
-                                any `OSError`, `FileNotFoundError` or `PermissionError` exception got raised.
-                                the default value `'ignore'` will ignore any decoding errors (missing some characters)
-                                and will return an empty string on any file/os exception.
-    :return:                    file content string. if the file could not be decoded, found or opened,
-                                then return an empty string or None (None only if `'strict'` got passed to the
-                                :paramref:`~read_file_text.error_handling` parameter).
+    :param encoding:            encoding used to load and convert/interpret the file content (see built-in `open`).
+    :param error_handling:      passed onto the `errors` parameter of the built-in `open` function.
+    :return:                    the file contents as a string. if the file could not be decoded, found or opened,
+                                returns an empty string (if :paramref:`~read_file_text.error_handling` is unspecified
+                                or set to `'ignore'`), otherwise `None`. this function suppresses and catches
+                                exceptions such as `FileNotFoundError`, `OSError`, `PermissionError`, and `ValueError`.
     """
     try:
         return read_file(file_path, encoding=encoding, error_handling=error_handling)
@@ -297,7 +294,9 @@ def write_file_text(text_or_lines: Union[str, List[str], Tuple[str]], file_path:
                                 concatenated with the line separator of the current OS: os.linesep).
     :param file_path:           file path/name to write the passed content into (overwriting any previous content!).
     :param encoding:            encoding used to write/convert/interpret the file content to write.
-    :return:                    True if the content got written to the file, False on any file/OS error.
+    :return:                    True if the content got written to the file, False on error/exception.
+                                this function suppresses and catches exceptions such as `FileExistsError`,
+                                `FileNotFoundError`, `OSError`, `PermissionError`, and `ValueError`.
     """
     content = text_or_lines if isinstance(text_or_lines, str) else os.linesep.join(text_or_lines)
     try:
