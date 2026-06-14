@@ -103,7 +103,7 @@ from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, 
 from ae.base import dummy_function, norm_line_sep, read_file, write_file                                # type: ignore
 
 
-__version__ = '0.3.27'
+__version__ = '0.3.28'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -319,11 +319,11 @@ class RegisteredFile:
         self.path: str = file_path                                      #: file path
         self.stem: str                                                  #: file basename without extension
         self.ext: str                                                   #: file name extension
-        dir_name, base_name = os.path.split(file_path)
+        dir_path, base_name = os.path.split(file_path)
         self.stem, self.ext = os.path.splitext(base_name)
 
         self.properties: PropertiesType = {}                            #: file properties
-        for folder in dir_name.split(os.path.sep):
+        for folder in dir_path.replace("\\", "/").split("/"):
             parts = folder.split("_", maxsplit=1)
             if len(parts) == 2:
                 self.add_property(*parts)
