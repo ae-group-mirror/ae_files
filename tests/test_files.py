@@ -255,13 +255,12 @@ class TestRegisteredFile:
 
     def test_init_with_properties(self, files_to_test):
         _, wip = files_to_test
-        sep = os.path.sep
 
         rf = RegisteredFile(wip)
         assert rf.path.startswith(file_root)
         assert rf.path.endswith(file_name + file_ext)
-        assert all(sep + _ + '_' in rf.path for _ in file_properties.keys())
-        assert all('_' + str(_) + sep in rf.path for _ in file_properties.values())
+        assert all("/" + _ + '_' in rf.path.replace("\\", "/") for _ in file_properties.keys())
+        assert all('_' + str(_) + "/" in rf.path.replace("\\", "/") for _ in file_properties.values())
         assert rf.stem == file_name
         assert rf.ext == file_ext
         assert rf.properties == file_properties
@@ -297,13 +296,12 @@ class TestCachedFile:
 
     def test_init_with_properties(self, files_to_test):
         _, wip = files_to_test
-        sep = os.path.sep
 
         cf = CachedFile(wip, file_loader_mock_func)
         assert cf.path.startswith(file_root)
         assert cf.path.endswith(file_name + file_ext)
-        assert all(sep + _ + '_' in cf.path for _ in file_properties.keys())
-        assert all('_' + str(_) + sep in cf.path for _ in file_properties.values())
+        assert all("/" + _ + '_' in cf.path.replace("\\", "/") for _ in file_properties.keys())
+        assert all('_' + str(_) + "/" in cf.path.replace("\\", "/") for _ in file_properties.values())
         assert cf.stem == file_name
         assert cf.ext == file_ext
         assert cf.properties == file_properties
