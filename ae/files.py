@@ -96,33 +96,38 @@ instance::
     cf.loaded_object.close()
 
 """
+from __future__ import annotations  # allow type forward references (PEP 563), can be removed in Python 3.14+ (PEP 749)
+
+import io
 import os
 import pathlib
-from typing import Any, BinaryIO, Callable, Dict, List, Optional, Tuple, Union, cast
+
+from collections.abc import Callable
+from typing import Any, BinaryIO, cast
 
 from ae.base import dummy_function, norm_line_sep, read_file, write_file                                # type: ignore
 
 
-__version__ = '0.3.28'
+__version__ = '0.3.29'
 
 
 COPY_BUF_LEN = 16 * 1024
 
 
-FileObject = Union[str, 'RegisteredFile', 'CachedFile', pathlib.Path, pathlib.PurePath, Any]
+type FileObject = str | RegisteredFile | CachedFile | pathlib.Path | pathlib.PurePath | Any
 """ file object type, e.g. a file path str or any class or callable where the returned instance/value is either a string
     or an object with a `stem` attribute (holding the file name w/o extension), like e.g. :class:`CachedFile`,
     :class:`RegisteredFile`, :class:`pathlib.Path` or :class:`pathlib.PurePath`.
 """
-PropertyType = Union[int, float, str]                                           #: types of file property values
-PropertiesType = Dict[str, PropertyType]                                        #: dict of file properties
-FilenameOrStream = Union[str, BinaryIO]                                         #: file name or file stream pointer
+type PropertyType = int | float | str                               #: types of file property values
+type PropertiesType = dict[str, PropertyType]                       #: dict of file properties
+type FilenameOrStream = str | BinaryIO                              #: file name or file stream pointer
 
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
 def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
                transferred_bytes: int = 0, total_bytes: int = 0, buf_size: int = COPY_BUF_LEN, overwrite: bool = False,
-               move_file: bool = False, recoverable: bool = False, errors: Optional[List[str]] = None,
+               move_file: bool = False, recoverable: bool = False, errors: list[str] | None = None,
                progress_func: Callable = dummy_function, **progress_kwargs) -> str:
     """ recoverable copy of a file or stream (file-like object), optionally with progress callbacks.
 
@@ -232,7 +237,7 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
     return "" if errors else str(dst_file)
 
 
-def file_lines(file_path: str, encoding: Optional[str] = None) -> Tuple[str, ...]:
+def file_lines(file_path: str, encoding: str | None = None) -> tuple[str, ...]:
     """ returning lines of the text file specified by file_path argument as tuple.
 
     :param file_path:           file path/name to parse/load.
@@ -251,7 +256,7 @@ def file_transfer_progress(transferred_bytes: int, total_bytes: int = 0, decimal
     :param decimal_places:      number of decimal places (should be between 0 and 3).
     :return:                    formatted string to display the progress of the currently running transfer.
     """
-    def _unit_size(size: float) -> Tuple[float, str]:
+    def _unit_size(size: float) -> tuple[float, str]:
         for unit in ("", "K", "M", "G", "T"):
             if size < 1024.0:
                 break
@@ -269,7 +274,7 @@ def file_transfer_progress(transferred_bytes: int, total_bytes: int = 0, decimal
     return "{trs:.{de}f} {tru}".format(trs=trs, de=decimal_places if trs % 1 > 0 else 0, tru=tru)
 
 
-def read_file_text(file_path: str, encoding: Optional[str] = None, error_handling: str = 'ignore') -> Optional[str]:
+def read_file_text(file_path: str, encoding: str | None = None, error_handling: str = 'ignore') -> str | None:
     """ returning content of the text file specified by file_path argument as string, while suppressing exceptions.
 
     :param file_path:           file path/name to load into a string.
@@ -286,8 +291,7 @@ def read_file_text(file_path: str, encoding: Optional[str] = None, error_handlin
         return "" if error_handling == 'ignore' else None
 
 
-def write_file_text(text_or_lines: Union[str, List[str], Tuple[str]], file_path: str, encoding: Optional[str] = None
-                    ) -> bool:
+def write_file_text(text_or_lines: str | list[str] | tuple[str], file_path: str, encoding: str | None = None) -> bool:
     """ write the passed text string or list of line strings into the text file specified by file_path argument.
 
     :param text_or_lines:       new file content either passed as string or list of line strings (will be
@@ -316,13 +320,13 @@ class RegisteredFile:
                                 invalid kwargs.
         """
         assert not kwargs, "RegisteredFile does not have any kwargs - maybe want to use CachedFile as file_class."
-        self.path: str = file_path                                      #: file path
-        self.stem: str                                                  #: file basename without extension
-        self.ext: str                                                   #: file name extension
+        self.path: str = file_path                                  #: file path
+        self.stem: str                                              #: file basename without extension
+        self.ext: str                                               #: file name extension
         dir_path, base_name = os.path.split(file_path)
         self.stem, self.ext = os.path.splitext(base_name)
 
-        self.properties: PropertiesType = {}                            #: file properties
+        self.properties: PropertiesType = {}                        #: file properties
         for folder in dir_path.replace("\\", "/").split("/"):
             parts = folder.split("_", maxsplit=1)
             if len(parts) == 2:
@@ -336,14 +340,14 @@ class RegisteredFile:
         """
         return isinstance(other, self.__class__) and other.path == self.path
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         """ for config var storage and eval recovery.
 
         :return:    evaluable/recoverable representation of this object.
         """
         return f"{self.__class__.__name__}({self.path!r})"
 
-    def __str__(self):
+    def __str__(self) -> str:
         """ return the file path of the registered file.
 
         :return:    file path string of this file object.
@@ -366,7 +370,7 @@ class RegisteredFile:
         self.properties[property_name] = property_value
 
 
-def _default_object_loader(file_obj: FileObject):
+def _default_object_loader(file_obj: FileObject) -> io.TextIOWrapper:
     """ file object loader that is opening the file and keeping the handle of the opened file.
 
     :param file_obj:            file object (path string or obj with `path` attribute holding the complete file path).
@@ -378,7 +382,7 @@ def _default_object_loader(file_obj: FileObject):
 class CachedFile(RegisteredFile):
     """ represents a cacheables registered file object - see also :ref:`cached file` examples. """
     def __init__(self, file_path: str,
-                 object_loader: Callable[['CachedFile', ], Any] = _default_object_loader, late_loading: bool = True):
+                 object_loader: Callable[[CachedFile, ], Any] = _default_object_loader, late_loading: bool = True):
         """ create a cached file object instance.
 
         :param file_path:       path string of the file.
