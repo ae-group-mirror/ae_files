@@ -108,7 +108,7 @@ from typing import Any, IO, cast
 from ae.base import dummy_function, norm_line_sep, read_file, write_file                                # type: ignore
 
 
-__version__ = '0.3.30'
+__version__ = '0.3.31'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -119,9 +119,9 @@ type FileObject = str | RegisteredFile | CachedFile | pathlib.Path | pathlib.Pur
     or an object with a `stem` attribute (holding the file name w/o extension), like e.g. :class:`CachedFile`,
     :class:`RegisteredFile`, :class:`pathlib.Path` or :class:`pathlib.PurePath`.
 """
-type PropertyType = int | float | str                               #: types of file property values
-type PropertiesType = dict[str, PropertyType]                       #: dict of file properties
-type FilenameOrStream = str | IO[bytes]                             #: file name or file stream pointer
+type PropertyType = int | float | str                                           #: types of file property values
+type PropertiesType = dict[str, PropertyType]                                   #: dict of file properties
+type FilenameOrStream = str | IO[bytes] | io.BufferedIOBase | io.RawIOBase      #: file name or binary file/stream
 
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
