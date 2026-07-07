@@ -103,12 +103,12 @@ import os
 import pathlib
 
 from collections.abc import Callable
-from typing import Any, BinaryIO, cast
+from typing import Any, IO, cast
 
 from ae.base import dummy_function, norm_line_sep, read_file, write_file                                # type: ignore
 
 
-__version__ = '0.3.29'
+__version__ = '0.3.30'
 
 
 COPY_BUF_LEN = 16 * 1024
@@ -121,7 +121,7 @@ type FileObject = str | RegisteredFile | CachedFile | pathlib.Path | pathlib.Pur
 """
 type PropertyType = int | float | str                               #: types of file property values
 type PropertiesType = dict[str, PropertyType]                       #: dict of file properties
-type FilenameOrStream = str | BinaryIO                              #: file name or file stream pointer
+type FilenameOrStream = str | IO[bytes]                             #: file name or file stream pointer
 
 
 # pylint: disable=too-many-arguments,too-many-locals,too-many-branches,too-many-statements
@@ -183,12 +183,12 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
     if errors:
         return ""
 
-    src_fp: BinaryIO = cast(BinaryIO, cast(object, None))
+    src_fp: IO[bytes] = cast(IO[bytes], cast(object, None))
     try:
         # pylint: disable-next=consider-using-with
-        src_fp = open(cast(str, src_file), "rb") if src_named else cast(BinaryIO, src_file)
+        src_fp = open(cast(str, src_file), "rb") if src_named else cast(IO[bytes], src_file)
         # pylint: disable-next=consider-using-with
-        dst_fp = open(cast(str, dst_file), "ab+") if dst_named else cast(BinaryIO, dst_file)
+        dst_fp = open(cast(str, dst_file), "ab+") if dst_named else cast(IO[bytes], dst_file)
     except (OSError, Exception) as ex:                              # pylint: disable=broad-exception-caught
         errors.append(str(ex))
         if src_named and src_fp:
@@ -234,6 +234,7 @@ def copy_bytes(src_file: FilenameOrStream, dst_file: FilenameOrStream, *,
             if move_file and not errors:
                 os.remove(src_file)         # type: ignore # silly mypy does not recognize src_named ensuring str
 
+    # noinspection PyStringConversionWithoutDunderMethod
     return "" if errors else str(dst_file)
 
 
