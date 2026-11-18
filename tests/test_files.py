@@ -5,24 +5,25 @@ import shutil
 
 from io import TextIOWrapper
 
-from ae.base import norm_line_sep, read_file, write_bin_file, write_file
+from ae.base import norm_line_sep, os_path_isfile, os_path_join, read_file, write_bin_file, write_file
 
 
 from ae.files import (
-    copy_bytes, file_lines, file_transfer_progress, read_file_text, write_file_text, RegisteredFile, CachedFile)
+    copy_bytes, file_lines, file_transfer_progress, read_file_text, write_file_text,
+    CachedFile, RegisteredFile)
 
 
-text_block = "line1\nline2\rline3\r\n"
+tst_text_block = "line1\nline2\rline3\r\n"
 
 
 class TestHelpers:
     def test_file_lines(self):
         fnm = "tests/tst_lines.txt"
         try:
-            write_file_text(text_block, fnm)
-            assert file_lines(fnm) == tuple(norm_line_sep(text_block).splitlines())
+            write_file_text(tst_text_block, fnm)
+            assert file_lines(fnm) == tuple(norm_line_sep(tst_text_block).splitlines())
         finally:
-            if os.path.exists(fnm):
+            if os_path_isfile(fnm):
                 os.remove(fnm)
 
     def test_file_transfer_progress_transferred(self):
@@ -70,13 +71,13 @@ class TestHelpers:
     def test_read_file_text(self):
         fnm = "tests/tst_content.txt"
         try:
-            write_file_text(text_block, fnm)
-            assert read_file_text(fnm) == norm_line_sep(text_block)
+            write_file_text(tst_text_block, fnm)
+            assert read_file_text(fnm) == norm_line_sep(tst_text_block)
 
-            write_file_text(norm_line_sep(text_block), fnm)
-            assert read_file_text(fnm) == norm_line_sep(text_block)
+            write_file_text(norm_line_sep(tst_text_block), fnm)
+            assert read_file_text(fnm) == norm_line_sep(tst_text_block)
         finally:
-            if os.path.exists(fnm):
+            if os_path_isfile(fnm):
                 os.remove(fnm)
 
     def test_read_file_text_error(self):
@@ -86,10 +87,10 @@ class TestHelpers:
     def test_write_file_text(self):
         fnm = "tests/tst_write.txt"
         try:
-            assert write_file_text(text_block, fnm)
-            assert read_file_text(fnm) == norm_line_sep(text_block)
+            assert write_file_text(tst_text_block, fnm)
+            assert read_file_text(fnm) == norm_line_sep(tst_text_block)
         finally:
-            if os.path.exists(fnm):
+            if os_path_isfile(fnm):
                 os.remove(fnm)
 
     def test_write_file_text_error(self):
@@ -97,30 +98,35 @@ class TestHelpers:
         assert not write_file_text("what else", ":invalid \\=// file name....")
 
 
-file_root = 'TstRootFolder'
-file_name = 'tst_file'
-file_ext = '.xy'
-file_without_properties = os.path.join(file_root, file_name + file_ext)
-file_properties = {'int': 72, 'float': 1.5, 'str': 'value'}
-file_content = "test file content"
+tst_file_root = 'TstRootFolder'
+tst_file_name = 'tst_file'
+tst_file_ext = '.xy'
+tst_file_without_properties = os_path_join(tst_file_root, tst_file_name + tst_file_ext)
+tst_file_properties = {'int': 72, 'float': 1.5, 'str': 'value'}
+tst_file_content = "test file content"
 
 
 @pytest.fixture
 def files_to_test():
-    """ provide a test file with properties. """
-    fn = file_root
+    """ provide a test file with properties """
+    fn = tst_file_root
     os.mkdir(fn)
-    write_file(file_without_properties, file_content)
+    write_file(tst_file_without_properties, tst_file_content)
 
-    for name, value in file_properties.items():
-        fn = os.path.join(fn, name + '_' + str(value))
+    for name, value in tst_file_properties.items():
+        fn = os_path_join(fn, name + '_' + str(value))
         os.mkdir(fn)
-    fn = os.path.join(fn, file_name + file_ext)
-    write_file(fn, file_content)
+    fn = os_path_join(fn, tst_file_name + tst_file_ext)
+    write_file(fn, tst_file_content)
 
-    yield file_without_properties, fn
+    yield tst_file_without_properties, fn
 
-    shutil.rmtree(file_root)
+    shutil.rmtree(tst_file_root)
+
+
+def tst_file_loader_mock_func(file):
+    """ cacheables file object loader mock function """
+    return file
 
 
 class FileLoaderMockClass:
@@ -131,9 +137,70 @@ class FileLoaderMockClass:
         return file
 
 
-def file_loader_mock_func(file):
-    """ cacheables file object loader mock function """
-    return file
+class TestCachedFile:
+    """ test CachedFile class. """
+    def test_init_without_properties(self, files_to_test):
+        wop, _ = files_to_test
+
+        cf = CachedFile(wop, FileLoaderMockClass.load)
+        assert cf.path == tst_file_without_properties
+        assert cf.stem == tst_file_name
+        assert cf.ext == tst_file_ext
+        assert cf.properties == {}
+        assert cf.late_loading
+        assert cf.loaded_object is cf   # mock is returning the passed CachedFile instance
+
+        cf = CachedFile(wop)
+        assert isinstance(cf.loaded_object, TextIOWrapper)
+        cf.loaded_object.close()
+
+    def test_init_with_properties(self, files_to_test):
+        _, wip = files_to_test
+
+        cf = CachedFile(wip, tst_file_loader_mock_func)
+        assert cf.path.startswith(tst_file_root)
+        assert cf.path.endswith(tst_file_name + tst_file_ext)
+        assert all("/" + _ + '_' in cf.path.replace("\\", "/") for _ in tst_file_properties.keys())
+        assert all('_' + str(_) + "/" in cf.path.replace("\\", "/") for _ in tst_file_properties.values())
+        assert cf.stem == tst_file_name
+        assert cf.ext == tst_file_ext
+        assert cf.properties == tst_file_properties
+        assert cf.loaded_object is cf   # mock is returning the passed CachedFile instance
+
+    def test_init_early_loading(self, files_to_test):
+        wop, wip = files_to_test
+
+        cf = CachedFile(wip, tst_file_loader_mock_func)
+        assert cf._loaded_object is None
+
+        cf = CachedFile(wop, FileLoaderMockClass.load, late_loading=False)
+        assert cf._loaded_object is cf
+
+    def test_file_io_open(self):
+        cf = CachedFile('tests/conftest.py', object_loader=lambda f: open(f.path))
+        assert isinstance(cf.loaded_object, TextIOWrapper)
+        assert cf.loaded_object.read()
+        cf.loaded_object.close()
+
+    def test_file_io_open_read(self):
+        def load_file_content(lcf):
+            """ read file content """
+            return read_file(lcf.path)
+
+        cf = CachedFile('tests/conftest.py', object_loader=load_file_content)
+        assert isinstance(cf.loaded_object, str)
+        assert cf.loaded_object == load_file_content(cf)
+
+    def test_file_io_open_read_lines(self):
+        def load_file_content(lcf):
+            """ read file content """
+            with open(lcf.path) as fp:
+                content = fp.readlines()
+            return content
+
+        cf = CachedFile('tests/conftest.py', object_loader=load_file_content)
+        assert isinstance(cf.loaded_object, list)
+        assert cf.loaded_object == load_file_content(cf)
 
 
 class TestCopyBytes:
@@ -194,10 +261,10 @@ class TestCopyBytes:
         f1, f2 = files_to_test
         os.remove(f2)
 
-        assert not os.path.exists(f2)
+        assert not os_path_isfile(f2)
         assert copy_bytes(f1, f2, move_file=True)
-        assert not os.path.exists(f1)
-        assert os.path.exists(f2)
+        assert not os_path_isfile(f1)
+        assert os_path_isfile(f2)
 
     def test_progress_func(self, files_to_test):
         f1, f2 = files_to_test
@@ -217,7 +284,7 @@ class TestCopyBytes:
         errors = []
         assert copy_bytes(f1, f2, overwrite=True, errors=errors, progress_func=pro_fnc, pro_kwarg1=pro_kwarg1)
         assert not errors
-        assert progress_called
+        assert progress_called is True
         assert 'pro_kwarg1' in progress_kwargs
         assert progress_kwargs['pro_kwarg1'] == pro_kwarg1
         
@@ -225,7 +292,7 @@ class TestCopyBytes:
         progress_return = True
         assert not copy_bytes(f1, f2, overwrite=True, errors=errors, progress_func=pro_fnc, pro_kwarg1=pro_kwarg1)
         assert errors
-        assert progress_called
+        assert progress_called is True
         assert 'pro_kwarg1' in progress_kwargs
         assert progress_kwargs['pro_kwarg1'] == pro_kwarg1
 
@@ -235,8 +302,8 @@ class TestCopyBytes:
         assert copy_bytes(f1, f2, overwrite=True, recoverable=True)
         assert read_file_text(f2) == read_file_text(f1)
 
-        half_len = int(len(file_content) / 2)
-        write_bin_file(f2, bytes(file_content[:half_len], 'utf8'))
+        half_len = int(len(tst_file_content) / 2)
+        write_bin_file(f2, bytes(tst_file_content[:half_len], 'utf8'))
 
         assert copy_bytes(f1, f2, overwrite=True, recoverable=True)
         assert read_file_text(f2) == read_file_text(f1)
@@ -248,22 +315,22 @@ class TestRegisteredFile:
         wop, _ = files_to_test
 
         rf = RegisteredFile(wop)
-        assert rf.path == file_without_properties
-        assert rf.stem == file_name
-        assert rf.ext == file_ext
+        assert rf.path == tst_file_without_properties
+        assert rf.stem == tst_file_name
+        assert rf.ext == tst_file_ext
         assert rf.properties == {}
 
     def test_init_with_properties(self, files_to_test):
         _, wip = files_to_test
 
         rf = RegisteredFile(wip)
-        assert rf.path.startswith(file_root)
-        assert rf.path.endswith(file_name + file_ext)
-        assert all("/" + _ + '_' in rf.path.replace("\\", "/") for _ in file_properties.keys())
-        assert all('_' + str(_) + "/" in rf.path.replace("\\", "/") for _ in file_properties.values())
-        assert rf.stem == file_name
-        assert rf.ext == file_ext
-        assert rf.properties == file_properties
+        assert rf.path.startswith(tst_file_root)
+        assert rf.path.endswith(tst_file_name + tst_file_ext)
+        assert all("/" + _ + '_' in rf.path.replace("\\", "/") for _ in tst_file_properties.keys())
+        assert all('_' + str(_) + "/" in rf.path.replace("\\", "/") for _ in tst_file_properties.values())
+        assert rf.stem == tst_file_name
+        assert rf.ext == tst_file_ext
+        assert rf.properties == tst_file_properties
 
     def test_repr(self, files_to_test):
         _, wip = files_to_test
@@ -275,69 +342,3 @@ class TestRegisteredFile:
     def test_empty_kwargs(self):
         with pytest.raises(AssertionError):
             RegisteredFile('tests/test_files.py', any_kw_arg='tst')
-
-
-class TestCachedFile:
-    """ test CachedFile class. """
-    def test_init_without_properties(self, files_to_test):
-        wop, _ = files_to_test
-
-        cf = CachedFile(wop, FileLoaderMockClass.load)
-        assert cf.path == file_without_properties
-        assert cf.stem == file_name
-        assert cf.ext == file_ext
-        assert cf.properties == {}
-        assert cf.late_loading
-        assert cf.loaded_object is cf   # mock is returning the passed CachedFile instance
-
-        cf = CachedFile(wop)
-        assert isinstance(cf.loaded_object, TextIOWrapper)
-        cf.loaded_object.close()
-
-    def test_init_with_properties(self, files_to_test):
-        _, wip = files_to_test
-
-        cf = CachedFile(wip, file_loader_mock_func)
-        assert cf.path.startswith(file_root)
-        assert cf.path.endswith(file_name + file_ext)
-        assert all("/" + _ + '_' in cf.path.replace("\\", "/") for _ in file_properties.keys())
-        assert all('_' + str(_) + "/" in cf.path.replace("\\", "/") for _ in file_properties.values())
-        assert cf.stem == file_name
-        assert cf.ext == file_ext
-        assert cf.properties == file_properties
-        assert cf.loaded_object is cf   # mock is returning the passed CachedFile instance
-
-    def test_init_early_loading(self, files_to_test):
-        wop, wip = files_to_test
-
-        cf = CachedFile(wip, file_loader_mock_func)
-        assert cf._loaded_object is None
-
-        cf = CachedFile(wop, FileLoaderMockClass.load, late_loading=False)
-        assert cf._loaded_object is cf
-
-    def test_file_io_open(self):
-        cf = CachedFile('tests/conftest.py', object_loader=lambda f: open(f.path))
-        assert isinstance(cf.loaded_object, TextIOWrapper)
-        assert cf.loaded_object.read()
-        cf.loaded_object.close()
-
-    def test_file_io_open_read(self):
-        def load_file_content(lcf):
-            """ read file content """
-            return read_file(lcf.path)
-
-        cf = CachedFile('tests/conftest.py', object_loader=load_file_content)
-        assert isinstance(cf.loaded_object, str)
-        assert cf.loaded_object == load_file_content(cf)
-
-    def test_file_io_open_read_lines(self):
-        def load_file_content(lcf):
-            """ read file content """
-            with open(lcf.path) as fp:
-                content = fp.readlines()
-            return content
-
-        cf = CachedFile('tests/conftest.py', object_loader=load_file_content)
-        assert isinstance(cf.loaded_object, list)
-        assert cf.loaded_object == load_file_content(cf)
